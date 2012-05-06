@@ -13,6 +13,7 @@ namespace WheelDisplayHostApp
         private Int32 carIdx;
 
         // internal variables
+        private Boolean init;
         private Int32 gear;
         private Int32 rpm;
         private Int32 speed;
@@ -21,12 +22,18 @@ namespace WheelDisplayHostApp
         private Int32 lap;
         private Int32 lapsrem;
         private Int32 position;
+        private TimeSpan delta;
+        private TimeSpan prevlap;
 
         private Single lastTickTrackPos = 0;
         private Double lastTickTime;
         private Double lapStartTime = -1;
+        private Int32 trackLength;
+        private TimeDelta timedelta;
+        private Boolean lapTimeValid;
 
         // public interface
+        public Boolean isInitialized { get { return init; } set { } }
         public Int32 Gear { get { return gear; } set { } }
         public Int32 RPM { get { return rpm; } set { } }
         public Int32 Speed { get { return speed; } set { } }
@@ -36,25 +43,49 @@ namespace WheelDisplayHostApp
         public Int32 LapsRemaining { get { return lapsrem; } set { } }
         public Int32 Position { get { return position; } set { } }
         public TimeSpan LapTime { get { return new TimeSpan(0, 0, 0, (Int32)Math.Floor(lastTickTime - lapStartTime), (Int32)(((lastTickTime - lapStartTime) % 1) * 1000)); } set { } }
-        public TimeSpan Delta { get { return new TimeSpan(); } set { } }
-
-        // private 
+        public TimeSpan Delta { get { return delta; } set { } }
+        public TimeSpan PreviousLap { get { return prevlap; } set { } }
 
         public iracing()
+        {
+            // Forcing US locale for correct string to float conversion
+            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
+        }
+
+        public void initialize()
         {
             sdk = new iRacingSDK();
             sdk.Startup();
 
             // wait connection
-            while (!sdk.IsConnected());
-            
-            // get caridx
-            string yaml = sdk.GetSessionInfo();
-            Int32 found = yaml.IndexOf("DriverCarIdx: ");
-            carIdx = Int32.Parse(yaml.Substring(found + "DriverCarIdx: ".Length, 4));
+            if (sdk.IsConnected())
+            {
+                string yaml = sdk.GetSessionInfo();
 
-            // reset laptime
-            lapStartTime = (Double)sdk.GetData("ReplaySessionTime");
+                // get caridx
+                Int32 start = yaml.IndexOf("DriverCarIdx: ") + "DriverCarIdx: ".Length;
+                Int32 end = yaml.IndexOf("\n", start);
+                carIdx = Int32.Parse(yaml.Substring(start, end - start));
+
+                // get track length
+                start = yaml.IndexOf("TrackLength: ") + "TrackLength: ".Length;
+                end = yaml.IndexOf("km\n", start);
+                string dbg = yaml.Substring(start, end - start);
+                trackLength = (Int32)(Single.Parse(yaml.Substring(start, end - start)) * 1000);
+
+                // reset laptime
+                lapStartTime = (Double)sdk.GetData("ReplaySessionTime");
+                lapTimeValid = false;
+
+                // init timedelta
+                timedelta = new TimeDelta(trackLength);
+
+                init = true;
+            }
+            else
+            {
+                init = false;
+            }
         }
 
         public void updateData()
@@ -72,6 +103,13 @@ namespace WheelDisplayHostApp
                 lap = (Int32)sdk.GetData("Lap");
                 lapsrem = (Int32)sdk.GetData("SessionLapsRemain");
 
+                Double sessionTime = new Double();
+                Boolean ontrk = (Boolean)sdk.GetData("IsOnTrack");
+                if ((Boolean)sdk.GetData("IsOnTrack"))
+                    sessionTime = (Double)sdk.GetData("SessionTime");
+                else
+                    sessionTime = (Double)sdk.GetData("ReplaySessionTime");
+
                 if (carIdx >= 0) // skip thing that require caridx if we don't have it
                 {
                     Int32[] driverLaps = new Int32[64];
@@ -80,20 +118,36 @@ namespace WheelDisplayHostApp
                     Single[] driverTrkPos = new Single[64];
                     driverTrkPos = (Single[])sdk.GetData("CarIdxLapDistPct");
 
+                    timedelta.Update(sessionTime, driverTrkPos);
+
                     if (driverTrkPos[carIdx] < 0.1 && lastTickTrackPos > 0.9)
                     {
                         Double distance = (1 - lastTickTrackPos) + driverTrkPos[carIdx];
-                        Double time = (Double)sdk.GetData("ReplaySessionTime") - lastTickTime;
+                        Double time = sessionTime - lastTickTime;
                         Double tickCorrection = (1 - lastTickTrackPos) / distance;
-                        lapStartTime = (Double)sdk.GetData("ReplaySessionTime") - (1 - tickCorrection) * time;
+
+                        // save lap time
+                        if (lapTimeValid)
+                        {
+                            Double laptime = (sessionTime - (1 - tickCorrection) * time) - lapStartTime;
+                            prevlap = new TimeSpan(0, 0, 0, (Int32)Math.Floor(laptime), (Int32)Math.Floor((laptime % 1) * 1000));
+                        }
+
+                        // start new lap
+                        lapStartTime = sessionTime - (1 - tickCorrection) * time;
+                        lapTimeValid = true;
+                    }
+                    else if(Math.Abs(driverTrkPos[carIdx] - lastTickTrackPos) > 0.1) {
+                        // invalidate lap time if jumping too much
+                        lapTimeValid = false;
                     }
 
                     lastTickTrackPos = driverTrkPos[carIdx]; // save for next tick
-                    lastTickTime = (Double)sdk.GetData("ReplaySessionTime");
+                    lastTickTime = sessionTime;
 
                     Int32[] driverCarIdx = new Int32[64];
 
-                    for (int i = 0; i < 64; i++)
+                    for (Int32 i = 0; i < 64; i++)
                     {
                         driverTrkPos[i] += (Single)driverLaps[i];
                         driverCarIdx[i] = i;
@@ -102,7 +156,13 @@ namespace WheelDisplayHostApp
                     Array.Sort(driverTrkPos, driverCarIdx);
                     Array.Reverse(driverCarIdx);
                     position = (Int32)(Array.IndexOf(driverCarIdx, carIdx) + 1);
+
+                    delta = timedelta.GetDelta(carIdx,driverCarIdx[Math.Max(position-2, 0)]);
                 }
+            }
+            else
+            {
+                init = false;
             }
         }
     }

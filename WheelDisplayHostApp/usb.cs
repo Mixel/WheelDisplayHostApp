@@ -11,7 +11,16 @@ namespace WheelDisplayHostApp
 {
     class usb
     {
-        UsbDevice device;
+        // private
+        private UsbDevice device;
+
+        // public
+        public Boolean isInitialized { get {
+            if (device == null)
+                return false;
+            else
+                return device.UsbRegistryInfo.IsAlive;
+        } set { } }
 
         public enum types
         {
@@ -30,25 +39,20 @@ namespace WheelDisplayHostApp
             Gear = 0x1f,
         };
 
-        public usb()
+        public void initialize()
         {
-            Boolean found = false;
-
-            // Loop until we found our device
-            while (!found)
+            UsbRegDeviceList allDevices = UsbDevice.AllDevices;
+            foreach (UsbRegistry usbRegistry in allDevices)
             {
-                UsbRegDeviceList allDevices = UsbDevice.AllDevices;
-                foreach (UsbRegistry usbRegistry in allDevices)
+                UsbDevice MyUsbDevice;
+                if (usbRegistry.Open(out MyUsbDevice))
                 {
-                    UsbDevice MyUsbDevice;
-                    if (usbRegistry.Open(out MyUsbDevice))
+                    if (MyUsbDevice.Info.Descriptor.VendorID == 0x03eb && 
+                        MyUsbDevice.Info.Descriptor.ProductID == 0x2047)
                     {
                         this.device = MyUsbDevice;
-                        found = true;
                     }
                 }
-
-                System.Threading.Thread.Sleep(100); // wait
             }
         }
 
