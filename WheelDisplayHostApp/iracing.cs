@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using iRSDKSharp;
+using System.Text.RegularExpressions;
 
 namespace WheelDisplayHostApp
 {
@@ -24,6 +25,7 @@ namespace WheelDisplayHostApp
         private Int32 position;
         private TimeSpan delta;
         private TimeSpan prevlap;
+        private SessionTypes sessiontype;
 
         private Single lastTickTrackPos = 0;
         private Double lastTickTime;
@@ -31,6 +33,8 @@ namespace WheelDisplayHostApp
         private Int32 trackLength;
         private TimeDelta timedelta;
         private Boolean lapTimeValid;
+        private Double[] bestlap;
+        private Double[] currentlap;
 
         // public interface
         public Boolean isInitialized { get { return init; } set { } }
@@ -46,6 +50,15 @@ namespace WheelDisplayHostApp
         public TimeSpan Delta { get { return delta; } set { } }
         public TimeSpan PreviousLap { get { return prevlap; } set { } }
 
+        // public enums
+        public enum SessionTypes 
+        {
+            invalid,
+            practice,
+            qualify,
+            race
+        }
+
         public iracing()
         {
             // Forcing US locale for correct string to float conversion
@@ -57,32 +70,71 @@ namespace WheelDisplayHostApp
             sdk = new iRacingSDK();
             sdk.Startup();
 
-            // wait connection
+            // check connection
             if (sdk.IsConnected())
             {
                 string yaml = sdk.GetSessionInfo();
 
-                // get caridx
+                // caridx
                 Int32 start = yaml.IndexOf("DriverCarIdx: ") + "DriverCarIdx: ".Length;
                 Int32 end = yaml.IndexOf("\n", start);
                 carIdx = Int32.Parse(yaml.Substring(start, end - start));
 
-                // get track length
+                // track length
                 start = yaml.IndexOf("TrackLength: ") + "TrackLength: ".Length;
                 end = yaml.IndexOf("km\n", start);
                 string dbg = yaml.Substring(start, end - start);
                 trackLength = (Int32)(Single.Parse(yaml.Substring(start, end - start)) * 1000);
 
-                // reset laptime
+                // session types
+                //string pattern = @"SessionNum: (\d+)"; //SessionType: (\d+)";
+                RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.Compiled;
+                MatchCollection sessionNums, sessionTypes;
+                Regex optionRegex = new Regex(@"SessionNum: (\d+)", options);
+
+                // Get matches of pattern in yaml
+                sessionNums = optionRegex.Matches(yaml);
+
+                optionRegex = new Regex(@"SessionType: (\w+)", options);
+                sessionTypes = optionRegex.Matches(yaml);
+
+                Int32 currentSessionNum = (Int32)sdk.GetData("SessionNum");
+
+                // Iterate matches
+                for (int ctr = 0; ctr < Math.Min(sessionNums.Count, sessionTypes.Count); ctr++)
+                {
+                    if (Int32.Parse(sessionNums[ctr].Value.Substring(12)) == currentSessionNum)
+                    {
+                        switch (sessionTypes[ctr].Value.Substring(13).Trim())
+                        {
+                            case "Practice":
+                                sessiontype = iracing.SessionTypes.practice;
+                                break;
+                            case "Qualify":
+                                sessiontype = iracing.SessionTypes.qualify;
+                                break;
+                            case "Race":
+                                sessiontype = iracing.SessionTypes.race;
+                                break;
+                            default:
+                                sessiontype = iracing.SessionTypes.invalid;
+                                break;
+                        }
+                    }      
+                }
+
+                // reset laptimes
                 lapStartTime = (Double)sdk.GetData("ReplaySessionTime");
                 lapTimeValid = false;
+                bestlap = new Double[trackLength / 10];
+                currentlap = new Double[trackLength / 10];
 
                 // init timedelta
                 timedelta = new TimeDelta(trackLength);
 
                 init = true;
             }
-            else
+            else // retry next tick
             {
                 init = false;
             }
@@ -90,7 +142,7 @@ namespace WheelDisplayHostApp
 
         public void updateData()
         {
-            //Check if the SDK is connected
+            // Check if the SDK is connected
             if (sdk.IsConnected())
             {
                 // telemetry
@@ -105,18 +157,21 @@ namespace WheelDisplayHostApp
 
                 Double sessionTime = new Double();
                 Boolean ontrk = (Boolean)sdk.GetData("IsOnTrack");
+
                 if ((Boolean)sdk.GetData("IsOnTrack"))
                     sessionTime = (Double)sdk.GetData("SessionTime");
                 else
                     sessionTime = (Double)sdk.GetData("ReplaySessionTime");
 
-                if (carIdx >= 0) // skip thing that require caridx if we don't have it
+                if (carIdx >= 0) // skip things that require caridx if we don't have it
                 {
                     Int32[] driverLaps = new Int32[64];
                     driverLaps = (Int32[])sdk.GetData("CarIdxLap");
 
                     Single[] driverTrkPos = new Single[64];
                     driverTrkPos = (Single[])sdk.GetData("CarIdxLapDistPct");
+
+                    Int32 lapPointer = (Int32)Math.Floor(driverTrkPos[carIdx] * (trackLength / 10));
 
                     timedelta.Update(sessionTime, driverTrkPos);
 
@@ -131,6 +186,11 @@ namespace WheelDisplayHostApp
                         {
                             Double laptime = (sessionTime - (1 - tickCorrection) * time) - lapStartTime;
                             prevlap = new TimeSpan(0, 0, 0, (Int32)Math.Floor(laptime), (Int32)Math.Floor((laptime % 1) * 1000));
+
+                            if (currentlap[currentlap.Length - 1] < bestlap[bestlap.Length - 1] || bestlap[bestlap.Length - 1] == 0.0)
+                            {
+                                Array.Copy(currentlap, bestlap, currentlap.Length);
+                            }
                         }
 
                         // start new lap
@@ -142,22 +202,38 @@ namespace WheelDisplayHostApp
                         lapTimeValid = false;
                     }
 
+                    if (lapTimeValid && lapPointer >= 0)
+                    {
+                        currentlap[lapPointer] = (sessionTime - lapStartTime);
+                    }
+
                     lastTickTrackPos = driverTrkPos[carIdx]; // save for next tick
                     lastTickTime = sessionTime;
 
                     Int32[] driverCarIdx = new Int32[64];
 
-                    for (Int32 i = 0; i < 64; i++)
+                    if (sessiontype == SessionTypes.race)
                     {
-                        driverTrkPos[i] += (Single)driverLaps[i];
-                        driverCarIdx[i] = i;
+                        // in race calculate who is infront using trackpct and lap number
+                        for (Int32 i = 0; i < 64; i++)
+                        {
+                            driverTrkPos[i] += (Single)driverLaps[i];
+                            driverCarIdx[i] = i;
+                        }
+
+                        Array.Sort(driverTrkPos, driverCarIdx);
+                        Array.Reverse(driverCarIdx);
+                        position = (Int32)(Array.IndexOf(driverCarIdx, carIdx) + 1);
+
+                        delta = timedelta.GetDelta(carIdx, driverCarIdx[Math.Max(position - 2, 0)]);
                     }
-
-                    Array.Sort(driverTrkPos, driverCarIdx);
-                    Array.Reverse(driverCarIdx);
-                    position = (Int32)(Array.IndexOf(driverCarIdx, carIdx) + 1);
-
-                    delta = timedelta.GetDelta(carIdx,driverCarIdx[Math.Max(position-2, 0)]);
+                    else if (lapPointer >= 0)
+                    {
+                        Double diff = currentlap[lapPointer] - bestlap[lapPointer];
+                        delta = new TimeSpan(0, 0, 0, (Int32)Math.Floor(diff), (Int32)Math.Abs((diff % 1) * 1000));
+                    }
+                    else
+                        delta = new TimeSpan();
                 }
             }
             else

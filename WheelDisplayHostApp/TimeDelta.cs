@@ -15,7 +15,7 @@ namespace WheelDisplayHostApp
         public TimeDelta(Single length)
         {
             // split times every 5 meters
-            Int32 arraySize = (Int32)Math.Round(length / 5);
+            Int32 arraySize = (Int32)Math.Round(length / 10);
 
             // set split length
             splitLength = (Single)(1.0 / (Double)arraySize);
@@ -33,9 +33,15 @@ namespace WheelDisplayHostApp
             {
                 if (trackPosition[i] > 0)
                 {
-                    currentSplitPointer = (Int32)Math.Floor(trackPosition[i] / splitLength);
-                    splits[i][currentSplitPointer] = timestamp;
-                    splitPointer[i] = currentSplitPointer;
+                    // interpolate split border crossing
+                    currentSplitPointer = (Int32)Math.Floor((trackPosition[i] % 1) / splitLength);
+                    if (currentSplitPointer != splitPointer[i])
+                    {
+                        Single distance = trackPosition[i] - (currentSplitPointer * splitLength);
+                        Single correction = distance / splitLength;
+                        splits[i][currentSplitPointer] = timestamp - ((timestamp - prevTimestamp)* correction);
+                        splitPointer[i] = currentSplitPointer;
+                    }
                 }
             }
 
@@ -44,27 +50,19 @@ namespace WheelDisplayHostApp
 
         public TimeSpan GetDelta(Int32 caridx1, Int32 caridx2)
         {
-            Int32[] car = new Int32[2];
-            if (splitPointer[caridx1] >= splitPointer[caridx2])
-            {
-                car[0] = caridx1;
-                car[1] = caridx2;
-            }
-            else
-            {
-                car[0] = caridx2;
-                car[1] = caridx1;
-            }
-
             // comparing latest finished split
-            Int32 comparedSplit = splitPointer[car[1]]-1;
+            Int32 comparedSplit = splitPointer[caridx1];
 
             // catch negative index and loop it to last index
             if (comparedSplit < 0)
-                comparedSplit = splits[car[0]].Length - 1;
-            Double delta = splits[car[1]][comparedSplit] - splits[car[0]][comparedSplit];
+                comparedSplit = splits[caridx1].Length - 1;
 
-            return new TimeSpan(0, 0, 0, (Int32)Math.Floor(delta), (Int32)Math.Floor((delta % 1) * 1000));
+            Double delta = splits[caridx1][comparedSplit] - splits[caridx2][comparedSplit];
+
+            if (delta < 0)
+                return new TimeSpan();
+            else
+                return new TimeSpan(0, 0, 0, (Int32)Math.Floor(delta), (Int32)Math.Abs((delta % 1) * 1000));
         }
     }
 }

@@ -49,10 +49,11 @@ namespace WheelDisplayHostApp
                 LapTimeValue.Text = ir.LapTime.Minutes.ToString() + ":" + ir.LapTime.Seconds.ToString("D2") + "." + ir.LapTime.Milliseconds.ToString("D3");
                 PreviousLapValue.Text = ir.PreviousLap.Minutes.ToString() + ":" + ir.PreviousLap.Seconds.ToString("D2") + "." + ir.PreviousLap.Milliseconds.ToString("D3");
 
-                if (ir.Delta.TotalMilliseconds > 0)
-                    DeltaValue.Text = ir.Delta.Minutes.ToString() + ":" + ir.Delta.Seconds.ToString("D2") + "." + ir.Delta.Milliseconds.ToString("D3");
+                if (ir.Delta.TotalMilliseconds < 0)
+                    DeltaValue.Text = "-" + Math.Abs(ir.Delta.Minutes).ToString() + ":" + Math.Abs(ir.Delta.Seconds).ToString("D2") + "." + Math.Abs(ir.Delta.Milliseconds).ToString("D3");
                 else
-                    DeltaValue.Text = "0:00.000";
+
+                    DeltaValue.Text = ir.Delta.Minutes.ToString() + ":" + ir.Delta.Seconds.ToString("D2") + "." + ir.Delta.Milliseconds.ToString("D3");
             }
             else
             {
@@ -70,11 +71,24 @@ namespace WheelDisplayHostApp
                     u.updateType(usb.types.Gear, 8);
                 else
                     u.updateType(usb.types.Gear, (short)(ir.Gear - 1));
-
+                /*
                 u.updateType(usb.types.Speed, (short)ir.Speed);
                 u.updateType(usb.types.RPM, (short)ir.RPM);
                 u.updateType(usb.types.Lap, (short)ir.Lap);
                 u.updateType(usb.types.Fuel, (short)ir.Fuel);
+                u.updateType(usb.types.FuelNeeded, (short)ir.FuelNeeded);
+                u.updateType(usb.types.LapsRemaining, (short)ir.LapsRemaining);
+                */
+                ushort deltabytes = 0;
+                if (ir.Delta.TotalMilliseconds < 0)
+                    deltabytes |= 1 << 15;
+
+                deltabytes |= (ushort)((UInt16)(Math.Abs(ir.Delta.Minutes)) << 9);
+                deltabytes |= (ushort)((UInt16)(Math.Abs(ir.Delta.Seconds)) << 3);
+                deltabytes |= (ushort)((UInt16)(Math.Abs(ir.Delta.Milliseconds/100)));
+
+                u.updateType(usb.types.Delta, unchecked((short)deltabytes));
+
             }
             else if (ir != null)
             {
