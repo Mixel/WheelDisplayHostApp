@@ -43,6 +43,7 @@ namespace WheelDisplayHostApp
                 SpeedValue.Text = ir.Speed.ToString() + " km/h";
                 FuelValue.Text = ir.Fuel.ToString() + " ltr";
                 FuelNeededValue.Text = ir.FuelNeeded.ToString() + " ltr";
+                FuelConsumptionValue.Text = Math.Round(ir.fuelConsumption, 1).ToString() + " ltr/lap";
                 LapValue.Text = ir.Lap.ToString();
                 LapsRemainingValue.Text = ir.LapsRemaining.ToString();
                 PositionValue.Text = ir.Position.ToString();
@@ -67,18 +68,19 @@ namespace WheelDisplayHostApp
             if (u != null && u.isInitialized && ir != null)
             {
                 USBStatusValue.Text = "connected";
+
                 if (ir.Gear < 0)
                     u.updateType(usb.types.Gear, 8);
                 else
                     u.updateType(usb.types.Gear, (short)(ir.Gear - 1));
-                /*
+                
                 u.updateType(usb.types.Speed, (short)ir.Speed);
                 u.updateType(usb.types.RPM, (short)ir.RPM);
                 u.updateType(usb.types.Lap, (short)ir.Lap);
                 u.updateType(usb.types.Fuel, (short)ir.Fuel);
                 u.updateType(usb.types.FuelNeeded, (short)ir.FuelNeeded);
                 u.updateType(usb.types.LapsRemaining, (short)ir.LapsRemaining);
-                */
+                
                 ushort deltabytes = 0;
                 if (ir.Delta.TotalMilliseconds < 0)
                     deltabytes |= 1 << 15;
@@ -88,7 +90,17 @@ namespace WheelDisplayHostApp
                 deltabytes |= (ushort)((UInt16)(Math.Abs(ir.Delta.Milliseconds/100)));
 
                 u.updateType(usb.types.Delta, unchecked((short)deltabytes));
+                
+                ushort laptimebytes = 0;
+                if (ir.LapTime.TotalMilliseconds < 0)
+                    laptimebytes |= 1 << 15;
 
+                laptimebytes |= (ushort)((UInt16)(Math.Abs(ir.LapTime.Minutes)) << 9);
+                laptimebytes |= (ushort)((UInt16)(Math.Abs(ir.LapTime.Seconds)) << 3);
+                laptimebytes |= (ushort)((UInt16)(Math.Abs(ir.LapTime.Milliseconds / 100)));
+
+                u.updateType(usb.types.LapTime, unchecked((short)laptimebytes));
+                
             }
             else if (ir != null)
             {

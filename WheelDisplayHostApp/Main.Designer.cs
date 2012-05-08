@@ -59,6 +59,8 @@
             this.USBStatusValue = new System.Windows.Forms.ToolStripStatusLabel();
             this.SimStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.SimStatusValue = new System.Windows.Forms.ToolStripStatusLabel();
+            this.FuelConsumption = new System.Windows.Forms.Label();
+            this.FuelConsumptionValue = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -75,6 +77,7 @@
             // 
             // splitContainer1.Panel1
             // 
+            this.splitContainer1.Panel1.Controls.Add(this.FuelConsumption);
             this.splitContainer1.Panel1.Controls.Add(this.PreviousLap);
             this.splitContainer1.Panel1.Controls.Add(this.Delta);
             this.splitContainer1.Panel1.Controls.Add(this.RPM);
@@ -90,6 +93,7 @@
             // 
             // splitContainer1.Panel2
             // 
+            this.splitContainer1.Panel2.Controls.Add(this.FuelConsumptionValue);
             this.splitContainer1.Panel2.Controls.Add(this.PreviousLapValue);
             this.splitContainer1.Panel2.Controls.Add(this.DeltaValue);
             this.splitContainer1.Panel2.Controls.Add(this.RPMValue);
@@ -110,7 +114,7 @@
             // PreviousLap
             // 
             this.PreviousLap.AutoSize = true;
-            this.PreviousLap.Location = new System.Drawing.Point(3, 180);
+            this.PreviousLap.Location = new System.Drawing.Point(3, 199);
             this.PreviousLap.Name = "PreviousLap";
             this.PreviousLap.Padding = new System.Windows.Forms.Padding(3);
             this.PreviousLap.Size = new System.Drawing.Size(71, 19);
@@ -120,7 +124,7 @@
             // Delta
             // 
             this.Delta.AutoSize = true;
-            this.Delta.Location = new System.Drawing.Point(3, 199);
+            this.Delta.Location = new System.Drawing.Point(3, 218);
             this.Delta.Name = "Delta";
             this.Delta.Padding = new System.Windows.Forms.Padding(3);
             this.Delta.Size = new System.Drawing.Size(38, 19);
@@ -140,7 +144,7 @@
             // LapTime
             // 
             this.LapTime.AutoSize = true;
-            this.LapTime.Location = new System.Drawing.Point(3, 161);
+            this.LapTime.Location = new System.Drawing.Point(3, 180);
             this.LapTime.Name = "LapTime";
             this.LapTime.Padding = new System.Windows.Forms.Padding(3);
             this.LapTime.Size = new System.Drawing.Size(53, 19);
@@ -150,7 +154,7 @@
             // Position
             // 
             this.Position.AutoSize = true;
-            this.Position.Location = new System.Drawing.Point(3, 142);
+            this.Position.Location = new System.Drawing.Point(3, 161);
             this.Position.Name = "Position";
             this.Position.Padding = new System.Windows.Forms.Padding(3);
             this.Position.Size = new System.Drawing.Size(50, 19);
@@ -160,7 +164,7 @@
             // LapsRemaining
             // 
             this.LapsRemaining.AutoSize = true;
-            this.LapsRemaining.Location = new System.Drawing.Point(3, 123);
+            this.LapsRemaining.Location = new System.Drawing.Point(3, 142);
             this.LapsRemaining.Name = "LapsRemaining";
             this.LapsRemaining.Padding = new System.Windows.Forms.Padding(3);
             this.LapsRemaining.Size = new System.Drawing.Size(84, 19);
@@ -170,7 +174,7 @@
             // Lap
             // 
             this.Lap.AutoSize = true;
-            this.Lap.Location = new System.Drawing.Point(3, 104);
+            this.Lap.Location = new System.Drawing.Point(3, 123);
             this.Lap.Name = "Lap";
             this.Lap.Padding = new System.Windows.Forms.Padding(3);
             this.Lap.Size = new System.Drawing.Size(31, 19);
@@ -220,7 +224,7 @@
             // PreviousLapValue
             // 
             this.PreviousLapValue.AutoSize = true;
-            this.PreviousLapValue.Location = new System.Drawing.Point(3, 180);
+            this.PreviousLapValue.Location = new System.Drawing.Point(3, 199);
             this.PreviousLapValue.Name = "PreviousLapValue";
             this.PreviousLapValue.Padding = new System.Windows.Forms.Padding(3);
             this.PreviousLapValue.Size = new System.Drawing.Size(19, 19);
@@ -230,7 +234,7 @@
             // DeltaValue
             // 
             this.DeltaValue.AutoSize = true;
-            this.DeltaValue.Location = new System.Drawing.Point(3, 199);
+            this.DeltaValue.Location = new System.Drawing.Point(3, 218);
             this.DeltaValue.Name = "DeltaValue";
             this.DeltaValue.Padding = new System.Windows.Forms.Padding(3);
             this.DeltaValue.Size = new System.Drawing.Size(19, 19);
@@ -250,7 +254,7 @@
             // LapTimeValue
             // 
             this.LapTimeValue.AutoSize = true;
-            this.LapTimeValue.Location = new System.Drawing.Point(3, 161);
+            this.LapTimeValue.Location = new System.Drawing.Point(3, 180);
             this.LapTimeValue.Name = "LapTimeValue";
             this.LapTimeValue.Padding = new System.Windows.Forms.Padding(3);
             this.LapTimeValue.Size = new System.Drawing.Size(19, 19);
@@ -260,7 +264,7 @@
             // PositionValue
             // 
             this.PositionValue.AutoSize = true;
-            this.PositionValue.Location = new System.Drawing.Point(3, 142);
+            this.PositionValue.Location = new System.Drawing.Point(3, 161);
             this.PositionValue.Name = "PositionValue";
             this.PositionValue.Padding = new System.Windows.Forms.Padding(3);
             this.PositionValue.Size = new System.Drawing.Size(19, 19);
@@ -270,7 +274,7 @@
             // LapsRemainingValue
             // 
             this.LapsRemainingValue.AutoSize = true;
-            this.LapsRemainingValue.Location = new System.Drawing.Point(3, 123);
+            this.LapsRemainingValue.Location = new System.Drawing.Point(3, 142);
             this.LapsRemainingValue.Name = "LapsRemainingValue";
             this.LapsRemainingValue.Padding = new System.Windows.Forms.Padding(3);
             this.LapsRemainingValue.Size = new System.Drawing.Size(19, 19);
@@ -280,7 +284,7 @@
             // LapValue
             // 
             this.LapValue.AutoSize = true;
-            this.LapValue.Location = new System.Drawing.Point(3, 104);
+            this.LapValue.Location = new System.Drawing.Point(3, 123);
             this.LapValue.Name = "LapValue";
             this.LapValue.Padding = new System.Windows.Forms.Padding(3);
             this.LapValue.Size = new System.Drawing.Size(19, 19);
@@ -375,6 +379,26 @@
             this.SimStatusValue.Size = new System.Drawing.Size(76, 17);
             this.SimStatusValue.Text = "not connected";
             // 
+            // FuelConsumption
+            // 
+            this.FuelConsumption.AutoSize = true;
+            this.FuelConsumption.Location = new System.Drawing.Point(3, 104);
+            this.FuelConsumption.Name = "FuelConsumption";
+            this.FuelConsumption.Padding = new System.Windows.Forms.Padding(3);
+            this.FuelConsumption.Size = new System.Drawing.Size(96, 19);
+            this.FuelConsumption.TabIndex = 11;
+            this.FuelConsumption.Text = "Fuel consumption";
+            // 
+            // FuelConsumptionValue
+            // 
+            this.FuelConsumptionValue.AutoSize = true;
+            this.FuelConsumptionValue.Location = new System.Drawing.Point(3, 104);
+            this.FuelConsumptionValue.Name = "FuelConsumptionValue";
+            this.FuelConsumptionValue.Padding = new System.Windows.Forms.Padding(3);
+            this.FuelConsumptionValue.Size = new System.Drawing.Size(19, 19);
+            this.FuelConsumptionValue.TabIndex = 11;
+            this.FuelConsumptionValue.Text = "0";
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -430,6 +454,8 @@
         private System.Windows.Forms.ToolStripStatusLabel USBStatusValue;
         private System.Windows.Forms.ToolStripStatusLabel SimStatus;
         private System.Windows.Forms.ToolStripStatusLabel SimStatusValue;
+        private System.Windows.Forms.Label FuelConsumption;
+        private System.Windows.Forms.Label FuelConsumptionValue;
     }
 }
 

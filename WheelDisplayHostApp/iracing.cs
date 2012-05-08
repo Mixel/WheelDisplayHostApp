@@ -5,6 +5,18 @@ using System.Text;
 using iRSDKSharp;
 using System.Text.RegularExpressions;
 
+namespace iRSDKSharp
+{
+    public enum TrackLocation
+    {
+        irsdk_NotInWorld = -1,
+        irsdk_OffTrack,
+        irsdk_InPitStall,
+        irsdk_AproachingPits,
+        irsdk_OnTrack
+    };
+}
+
 namespace WheelDisplayHostApp
 {
     class iracing
@@ -35,6 +47,9 @@ namespace WheelDisplayHostApp
         private Boolean lapTimeValid;
         private Double[] bestlap;
         private Double[] currentlap;
+        private Single[] fuelcons;
+        private Int32 fuelconsPtr;
+        private Single fuelconsumption;
 
         // public interface
         public Boolean isInitialized { get { return init; } set { } }
@@ -43,6 +58,7 @@ namespace WheelDisplayHostApp
         public Int32 Speed { get { return speed; } set { } }
         public Int32 Fuel { get { return fuel; } set { } }
         public Int32 FuelNeeded { get { return fuelneed; } set { } }
+        public Single fuelConsumption { get { return fuelconsumption; } set { } }
         public Int32 Lap { get { return lap; } set { } }
         public Int32 LapsRemaining { get { return lapsrem; } set { } }
         public Int32 Position { get { return position; } set { } }
@@ -129,6 +145,10 @@ namespace WheelDisplayHostApp
                 bestlap = new Double[trackLength / 10];
                 currentlap = new Double[trackLength / 10];
 
+                // fuel consumption, last 5 lap rolling
+                fuelcons = new Single[5];
+                fuelconsPtr = 0;
+
                 // init timedelta
                 timedelta = new TimeDelta(trackLength);
 
@@ -171,7 +191,7 @@ namespace WheelDisplayHostApp
                     Single[] driverTrkPos = new Single[64];
                     driverTrkPos = (Single[])sdk.GetData("CarIdxLapDistPct");
 
-                    Int32 lapPointer = (Int32)Math.Floor(driverTrkPos[carIdx] * (trackLength / 10));
+                    Int32 lapPointer = (Int32)Math.Floor(Math.Min(driverTrkPos[carIdx], 1.0f) * (trackLength / 10));
 
                     timedelta.Update(sessionTime, driverTrkPos);
 
@@ -191,6 +211,32 @@ namespace WheelDisplayHostApp
                             {
                                 Array.Copy(currentlap, bestlap, currentlap.Length);
                             }
+
+                            
+                            fuelcons[fuelconsPtr % fuelcons.Length] = (Single)sdk.GetData("FuelLevel");
+
+                            // update fuel consumption after one full lap
+                            if (fuelconsPtr > 0)
+                            {
+                                if (fuelconsPtr >= fuelcons.Length)
+                                {
+                                    Single[] consrate = new Single[fuelcons.Length-1];
+                                    Int32 j = 0;
+                                    for (int i = fuelconsPtr; i < fuelconsPtr+consrate.Length; i++)
+                                    {
+                                        consrate[j++] = fuelcons[(i + 1) % fuelcons.Length] - fuelcons[(i + 2) % fuelcons.Length];
+                                    }
+                                    fuelneed = (Int32)(fuelcons[fuelconsPtr % fuelcons.Length] - (lapsrem * consrate.Average()));
+                                    fuelconsumption = consrate.Average();
+                                }
+                                else if (fuelconsPtr > 0)
+                                {
+                                    fuelneed = (Int32)(fuelcons[fuelconsPtr % fuelcons.Length] - (lapsrem * fuelcons[(fuelconsPtr - 1) % fuelcons.Length]));
+                                    fuelconsumption = fuelcons[(fuelconsPtr - 1) % fuelcons.Length] - fuelcons[fuelconsPtr % fuelcons.Length];
+                                }
+                                Console.WriteLine("Fuel level: {0} rate: {1}", fuelcons[fuelconsPtr % fuelcons.Length], (fuelcons[(fuelconsPtr - 1) % fuelcons.Length] - fuelcons[fuelconsPtr % fuelcons.Length]));
+                            }
+                            fuelconsPtr++;
                         }
 
                         // start new lap
@@ -200,6 +246,14 @@ namespace WheelDisplayHostApp
                     else if(Math.Abs(driverTrkPos[carIdx] - lastTickTrackPos) > 0.1) {
                         // invalidate lap time if jumping too much
                         lapTimeValid = false;
+                    }
+
+                    // reset fuel consumption when in pits
+                    TrackLocation[] trackSurface = (iRSDKSharp.TrackLocation[])sdk.GetData("CarIdxTrackSurface");
+                    if (trackSurface[carIdx] == TrackLocation.irsdk_InPitStall)
+                    {
+                        fuelcons = new Single[5];
+                        fuelconsPtr = 0;
                     }
 
                     if (lapTimeValid && lapPointer >= 0)

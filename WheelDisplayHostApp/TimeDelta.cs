@@ -7,21 +7,22 @@ namespace WheelDisplayHostApp
 {
     class TimeDelta
     {
-        private Double[][] splits = new Double[64][];
-        private Int32[] splitPointer = new Int32[64];
+        private static Int32 maxcars = 64;
+        private Double[][] splits = new Double[maxcars][];
+        private Int32[] splitPointer = new Int32[maxcars];
         private Single splitLength;
         private Double prevTimestamp;
 
         public TimeDelta(Single length)
         {
-            // split times every 5 meters
+            // split times every 10 meters
             Int32 arraySize = (Int32)Math.Round(length / 10);
 
             // set split length
             splitLength = (Single)(1.0 / (Double)arraySize);
 
             // initialize array
-            for (Int32 i = 0; i < 64; i++)
+            for (Int32 i = 0; i < maxcars; i++)
                 splits[i] = new Double[arraySize];
         }
 
@@ -50,19 +51,27 @@ namespace WheelDisplayHostApp
 
         public TimeSpan GetDelta(Int32 caridx1, Int32 caridx2)
         {
-            // comparing latest finished split
-            Int32 comparedSplit = splitPointer[caridx1];
+            // validate
+            if (caridx1 < maxcars && caridx2 < maxcars)
+            {
+                // comparing latest finished split
+                Int32 comparedSplit = splitPointer[caridx1];
 
-            // catch negative index and loop it to last index
-            if (comparedSplit < 0)
-                comparedSplit = splits[caridx1].Length - 1;
+                // catch negative index and loop it to last index
+                if (comparedSplit < 0)
+                    comparedSplit = splits[caridx1].Length - 1;
 
-            Double delta = splits[caridx1][comparedSplit] - splits[caridx2][comparedSplit];
+                Double delta = splits[caridx1][comparedSplit] - splits[caridx2][comparedSplit];
 
-            if (delta < 0)
-                return new TimeSpan();
+                if (delta < 0)
+                    return new TimeSpan();
+                else
+                    return new TimeSpan(0, 0, 0, (Int32)Math.Floor(delta), (Int32)Math.Abs((delta % 1) * 1000));
+            }
             else
-                return new TimeSpan(0, 0, 0, (Int32)Math.Floor(delta), (Int32)Math.Abs((delta % 1) * 1000));
+            {
+                return new TimeSpan();
+            }
         }
     }
 }
