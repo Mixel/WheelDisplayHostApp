@@ -48,7 +48,9 @@ namespace WheelDisplayHostApp
                 LapsRemainingValue.Text = ir.LapsRemaining.ToString();
                 PositionValue.Text = ir.Position.ToString();
                 LapTimeValue.Text = ir.LapTime.Minutes.ToString() + ":" + ir.LapTime.Seconds.ToString("D2") + "." + ir.LapTime.Milliseconds.ToString("D3");
+                BestLapValue.Text = ir.BestLap.Minutes.ToString() + ":" + ir.BestLap.Seconds.ToString("D2") + "." + ir.BestLap.Milliseconds.ToString("D3");
                 PreviousLapValue.Text = ir.PreviousLap.Minutes.ToString() + ":" + ir.PreviousLap.Seconds.ToString("D2") + "." + ir.PreviousLap.Milliseconds.ToString("D3");
+                RPMLedsValue.Value = (Int32)Math.Floor(ir.ShiftIndicator * 100);
 
                 if (ir.Delta.TotalMilliseconds < 0)
                     DeltaValue.Text = "-" + Math.Abs(ir.Delta.Minutes).ToString() + ":" + Math.Abs(ir.Delta.Seconds).ToString("D2") + "." + Math.Abs(ir.Delta.Milliseconds).ToString("D3");
@@ -99,8 +101,7 @@ namespace WheelDisplayHostApp
                 laptimebytes |= (ushort)((UInt16)(Math.Abs(ir.LapTime.Seconds)) << 3);
                 laptimebytes |= (ushort)((UInt16)(Math.Abs(ir.LapTime.Milliseconds / 100)));
 
-                u.updateType(usb.types.LapTime, unchecked((short)laptimebytes));
-                
+                u.updateType(usb.types.LapTime, unchecked((short)laptimebytes));    
             }
             else if (ir != null)
             {

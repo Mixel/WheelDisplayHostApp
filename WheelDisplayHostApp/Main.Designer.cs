@@ -30,6 +30,7 @@
         {
             this.components = new System.ComponentModel.Container();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.FuelConsumption = new System.Windows.Forms.Label();
             this.PreviousLap = new System.Windows.Forms.Label();
             this.Delta = new System.Windows.Forms.Label();
             this.RPM = new System.Windows.Forms.Label();
@@ -41,6 +42,7 @@
             this.Fuel = new System.Windows.Forms.Label();
             this.Speed = new System.Windows.Forms.Label();
             this.Gear = new System.Windows.Forms.Label();
+            this.FuelConsumptionValue = new System.Windows.Forms.Label();
             this.PreviousLapValue = new System.Windows.Forms.Label();
             this.DeltaValue = new System.Windows.Forms.Label();
             this.RPMValue = new System.Windows.Forms.Label();
@@ -54,18 +56,20 @@
             this.GearValue = new System.Windows.Forms.Label();
             this.apiUpdater = new System.Windows.Forms.Timer(this.components);
             this.usbUpdater = new System.Windows.Forms.Timer(this.components);
-            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.StatusBar = new System.Windows.Forms.StatusStrip();
             this.USBStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.USBStatusValue = new System.Windows.Forms.ToolStripStatusLabel();
             this.SimStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.SimStatusValue = new System.Windows.Forms.ToolStripStatusLabel();
-            this.FuelConsumption = new System.Windows.Forms.Label();
-            this.FuelConsumptionValue = new System.Windows.Forms.Label();
+            this.RPMLeds = new System.Windows.Forms.Label();
+            this.RPMLedsValue = new System.Windows.Forms.ProgressBar();
+            this.BestLap = new System.Windows.Forms.Label();
+            this.BestLapValue = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
-            this.statusStrip1.SuspendLayout();
+            this.StatusBar.SuspendLayout();
             this.SuspendLayout();
             // 
             // splitContainer1
@@ -77,6 +81,8 @@
             // 
             // splitContainer1.Panel1
             // 
+            this.splitContainer1.Panel1.Controls.Add(this.BestLap);
+            this.splitContainer1.Panel1.Controls.Add(this.RPMLeds);
             this.splitContainer1.Panel1.Controls.Add(this.FuelConsumption);
             this.splitContainer1.Panel1.Controls.Add(this.PreviousLap);
             this.splitContainer1.Panel1.Controls.Add(this.Delta);
@@ -93,6 +99,8 @@
             // 
             // splitContainer1.Panel2
             // 
+            this.splitContainer1.Panel2.Controls.Add(this.BestLapValue);
+            this.splitContainer1.Panel2.Controls.Add(this.RPMLedsValue);
             this.splitContainer1.Panel2.Controls.Add(this.FuelConsumptionValue);
             this.splitContainer1.Panel2.Controls.Add(this.PreviousLapValue);
             this.splitContainer1.Panel2.Controls.Add(this.DeltaValue);
@@ -106,10 +114,20 @@
             this.splitContainer1.Panel2.Controls.Add(this.SpeedValue);
             this.splitContainer1.Panel2.Controls.Add(this.GearValue);
             this.splitContainer1.Panel2MinSize = 20;
-            this.splitContainer1.Size = new System.Drawing.Size(225, 298);
-            this.splitContainer1.SplitterDistance = 148;
+            this.splitContainer1.Size = new System.Drawing.Size(292, 313);
+            this.splitContainer1.SplitterDistance = 200;
             this.splitContainer1.TabIndex = 0;
             this.splitContainer1.TabStop = false;
+            // 
+            // FuelConsumption
+            // 
+            this.FuelConsumption.AutoSize = true;
+            this.FuelConsumption.Location = new System.Drawing.Point(3, 104);
+            this.FuelConsumption.Name = "FuelConsumption";
+            this.FuelConsumption.Padding = new System.Windows.Forms.Padding(3);
+            this.FuelConsumption.Size = new System.Drawing.Size(96, 19);
+            this.FuelConsumption.TabIndex = 11;
+            this.FuelConsumption.Text = "Fuel consumption";
             // 
             // PreviousLap
             // 
@@ -124,7 +142,7 @@
             // Delta
             // 
             this.Delta.AutoSize = true;
-            this.Delta.Location = new System.Drawing.Point(3, 218);
+            this.Delta.Location = new System.Drawing.Point(3, 237);
             this.Delta.Name = "Delta";
             this.Delta.Padding = new System.Windows.Forms.Padding(3);
             this.Delta.Size = new System.Drawing.Size(38, 19);
@@ -221,6 +239,16 @@
             this.Gear.TabIndex = 0;
             this.Gear.Text = "Gear";
             // 
+            // FuelConsumptionValue
+            // 
+            this.FuelConsumptionValue.AutoSize = true;
+            this.FuelConsumptionValue.Location = new System.Drawing.Point(3, 104);
+            this.FuelConsumptionValue.Name = "FuelConsumptionValue";
+            this.FuelConsumptionValue.Padding = new System.Windows.Forms.Padding(3);
+            this.FuelConsumptionValue.Size = new System.Drawing.Size(19, 19);
+            this.FuelConsumptionValue.TabIndex = 11;
+            this.FuelConsumptionValue.Text = "0";
+            // 
             // PreviousLapValue
             // 
             this.PreviousLapValue.AutoSize = true;
@@ -234,7 +262,7 @@
             // DeltaValue
             // 
             this.DeltaValue.AutoSize = true;
-            this.DeltaValue.Location = new System.Drawing.Point(3, 218);
+            this.DeltaValue.Location = new System.Drawing.Point(3, 237);
             this.DeltaValue.Name = "DeltaValue";
             this.DeltaValue.Padding = new System.Windows.Forms.Padding(3);
             this.DeltaValue.Size = new System.Drawing.Size(19, 19);
@@ -342,18 +370,18 @@
             this.usbUpdater.Enabled = true;
             this.usbUpdater.Tick += new System.EventHandler(this.usbUpdater_Tick);
             // 
-            // statusStrip1
+            // StatusBar
             // 
-            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.StatusBar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.USBStatus,
             this.USBStatusValue,
             this.SimStatus,
             this.SimStatusValue});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 276);
-            this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(225, 22);
-            this.statusStrip1.TabIndex = 1;
-            this.statusStrip1.Text = "statusStrip1";
+            this.StatusBar.Location = new System.Drawing.Point(0, 291);
+            this.StatusBar.Name = "StatusBar";
+            this.StatusBar.Size = new System.Drawing.Size(292, 22);
+            this.StatusBar.TabIndex = 1;
+            this.StatusBar.Text = "statusStrip1";
             // 
             // USBStatus
             // 
@@ -379,32 +407,49 @@
             this.SimStatusValue.Size = new System.Drawing.Size(76, 17);
             this.SimStatusValue.Text = "not connected";
             // 
-            // FuelConsumption
+            // RPMLeds
             // 
-            this.FuelConsumption.AutoSize = true;
-            this.FuelConsumption.Location = new System.Drawing.Point(3, 104);
-            this.FuelConsumption.Name = "FuelConsumption";
-            this.FuelConsumption.Padding = new System.Windows.Forms.Padding(3);
-            this.FuelConsumption.Size = new System.Drawing.Size(96, 19);
-            this.FuelConsumption.TabIndex = 11;
-            this.FuelConsumption.Text = "Fuel consumption";
+            this.RPMLeds.AutoSize = true;
+            this.RPMLeds.Location = new System.Drawing.Point(3, 256);
+            this.RPMLeds.Name = "RPMLeds";
+            this.RPMLeds.Padding = new System.Windows.Forms.Padding(3);
+            this.RPMLeds.Size = new System.Drawing.Size(59, 19);
+            this.RPMLeds.TabIndex = 12;
+            this.RPMLeds.Text = "RPM leds";
             // 
-            // FuelConsumptionValue
+            // RPMLedsValue
             // 
-            this.FuelConsumptionValue.AutoSize = true;
-            this.FuelConsumptionValue.Location = new System.Drawing.Point(3, 104);
-            this.FuelConsumptionValue.Name = "FuelConsumptionValue";
-            this.FuelConsumptionValue.Padding = new System.Windows.Forms.Padding(3);
-            this.FuelConsumptionValue.Size = new System.Drawing.Size(19, 19);
-            this.FuelConsumptionValue.TabIndex = 11;
-            this.FuelConsumptionValue.Text = "0";
+            this.RPMLedsValue.Location = new System.Drawing.Point(3, 256);
+            this.RPMLedsValue.Name = "RPMLedsValue";
+            this.RPMLedsValue.Size = new System.Drawing.Size(70, 19);
+            this.RPMLedsValue.TabIndex = 12;
+            // 
+            // BestLap
+            // 
+            this.BestLap.AutoSize = true;
+            this.BestLap.Location = new System.Drawing.Point(3, 218);
+            this.BestLap.Name = "BestLap";
+            this.BestLap.Padding = new System.Windows.Forms.Padding(3);
+            this.BestLap.Size = new System.Drawing.Size(51, 19);
+            this.BestLap.TabIndex = 13;
+            this.BestLap.Text = "Best lap";
+            // 
+            // BestLapValue
+            // 
+            this.BestLapValue.AutoSize = true;
+            this.BestLapValue.Location = new System.Drawing.Point(3, 218);
+            this.BestLapValue.Name = "BestLapValue";
+            this.BestLapValue.Padding = new System.Windows.Forms.Padding(3);
+            this.BestLapValue.Size = new System.Drawing.Size(19, 19);
+            this.BestLapValue.TabIndex = 13;
+            this.BestLapValue.Text = "0";
             // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(225, 298);
-            this.Controls.Add(this.statusStrip1);
+            this.ClientSize = new System.Drawing.Size(292, 313);
+            this.Controls.Add(this.StatusBar);
             this.Controls.Add(this.splitContainer1);
             this.Name = "Main";
             this.Text = "Wheel Display Host";
@@ -415,8 +460,8 @@
             this.splitContainer1.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
-            this.statusStrip1.ResumeLayout(false);
-            this.statusStrip1.PerformLayout();
+            this.StatusBar.ResumeLayout(false);
+            this.StatusBar.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -449,13 +494,17 @@
         private System.Windows.Forms.Label DeltaValue;
         private System.Windows.Forms.Label PreviousLap;
         private System.Windows.Forms.Label PreviousLapValue;
-        private System.Windows.Forms.StatusStrip statusStrip1;
+        private System.Windows.Forms.StatusStrip StatusBar;
         private System.Windows.Forms.ToolStripStatusLabel USBStatus;
         private System.Windows.Forms.ToolStripStatusLabel USBStatusValue;
         private System.Windows.Forms.ToolStripStatusLabel SimStatus;
         private System.Windows.Forms.ToolStripStatusLabel SimStatusValue;
         private System.Windows.Forms.Label FuelConsumption;
         private System.Windows.Forms.Label FuelConsumptionValue;
+        private System.Windows.Forms.Label RPMLeds;
+        private System.Windows.Forms.ProgressBar RPMLedsValue;
+        private System.Windows.Forms.Label BestLap;
+        private System.Windows.Forms.Label BestLapValue;
     }
 }
 

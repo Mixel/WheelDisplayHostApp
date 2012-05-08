@@ -12,6 +12,11 @@ namespace WheelDisplayHostApp
         private Int32[] splitPointer = new Int32[maxcars];
         private Single splitLength;
         private Double prevTimestamp;
+        private Int32 followed;
+        private Double[] bestlap;
+        private Double[] currentlap;
+        private Boolean validbestlap;
+        private Double lapstarttime;
 
         public TimeDelta(Single length)
         {
@@ -21,32 +26,122 @@ namespace WheelDisplayHostApp
             // set split length
             splitLength = (Single)(1.0 / (Double)arraySize);
 
+            // init best lap
+            followed = -1;
+            bestlap = new Double[arraySize];
+            currentlap = new Double[arraySize];
+            validbestlap = false;
+
             // initialize array
             for (Int32 i = 0; i < maxcars; i++)
                 splits[i] = new Double[arraySize];
         }
 
+        public void SaveBestLap(Int32 caridx)
+        {
+            followed = caridx;
+        }
+
+        public TimeSpan BestLap { get { if (validbestlap) return new TimeSpan(0, 0, 0, (Int32)bestlap[bestlap.Length - 1], (Int32)((bestlap[bestlap.Length - 1] % 1) * 1000)); else return new TimeSpan(); } set { } }
+
         public void Update(Double timestamp, Single[] trackPosition) 
         {
-            Int32 currentSplitPointer;
-
-            for (Int32 i = 0; i < trackPosition.Length; i++)
+            // sanity check
+            if (timestamp > prevTimestamp)
             {
-                if (trackPosition[i] > 0)
+                Int32 currentSplitPointer;
+
+                for (Int32 i = 0; i < trackPosition.Length; i++)
                 {
-                    // interpolate split border crossing
-                    currentSplitPointer = (Int32)Math.Floor((trackPosition[i] % 1) / splitLength);
-                    if (currentSplitPointer != splitPointer[i])
+                    if (trackPosition[i] > 0)
                     {
-                        Single distance = trackPosition[i] - (currentSplitPointer * splitLength);
-                        Single correction = distance / splitLength;
-                        splits[i][currentSplitPointer] = timestamp - ((timestamp - prevTimestamp)* correction);
-                        splitPointer[i] = currentSplitPointer;
+                        // interpolate split border crossing
+                        currentSplitPointer = (Int32)Math.Floor((trackPosition[i] % 1) / splitLength);
+
+                        if (currentSplitPointer != splitPointer[i])
+                        {
+                            // interpolate
+                            Single distance = trackPosition[i] - (currentSplitPointer * splitLength);
+                            Single correction = distance / splitLength;
+                            Double currentSplitTime = timestamp - ((timestamp - prevTimestamp) * correction);
+
+                            // save in case of new lap record
+                            if (followed >= 0)
+                            {
+                                // check new lap
+                                if (currentSplitPointer == 0)
+                                {
+                                    if ((currentSplitTime - splits[i][0]) < bestlap[bestlap.Length - 1] || bestlap[bestlap.Length - 1] == 0)
+                                    {
+                                        validbestlap = true;
+                                        // save lap and substract session time offset
+                                        for (Int32 j = 0; j < bestlap.Length - 1; j++)
+                                        {
+                                            bestlap[j] = splits[i][j + 1] - splits[i][0];
+                                            if (splits[i][j + 1] == 0.0)
+                                                validbestlap = false;
+                                        }
+
+                                        bestlap[bestlap.Length - 1] = currentSplitTime - splits[i][0];
+                                    }
+                                }
+
+                                lapstarttime = currentlap[currentSplitPointer];
+                                currentlap[currentSplitPointer] = currentSplitTime;
+                            }
+                            
+                            // save
+                            splits[i][currentSplitPointer] = currentSplitTime;
+                            splitPointer[i] = currentSplitPointer;
+                        }
                     }
                 }
-            }
 
-            prevTimestamp = timestamp;
+                prevTimestamp = timestamp;
+            }
+        }
+
+        private string debug;
+
+        public TimeSpan GetBestLapDelta(Single trackPosition)
+        {
+            if (validbestlap)
+            {
+                Int32 currentSplitPointer = (Int32)Math.Floor((Math.Abs(trackPosition) % 1) / splitLength);
+                Double delta;
+
+                if (currentSplitPointer == 0)
+                {
+                    delta = (splits[followed][0] - lapstarttime) - bestlap[bestlap.Length - 1];
+                    string output = currentSplitPointer + ": (" + splits[followed][0] + " - " + lapstarttime + ") - " + bestlap[bestlap.Length - 1] + " = " + delta;
+                    if (output != debug)
+                        Console.WriteLine(output);
+                    debug = output;
+                }
+                else if (currentSplitPointer == (bestlap.Length - 1))
+                {
+                    delta = (splits[followed][currentSplitPointer] - lapstarttime) - bestlap[bestlap.Length - 1];
+                    string output = currentSplitPointer + ": (" + splits[followed][currentSplitPointer] + " - " + splits[followed][0] + ") - " + bestlap[bestlap.Length - 1] + " = " + delta;
+                    if (output != debug)
+                        Console.WriteLine(output);
+                    debug = output;
+                }
+                else
+                {
+                    delta = (splits[followed][currentSplitPointer] - splits[followed][bestlap.Length - 1]) - bestlap[currentSplitPointer - 1];
+                    string output = currentSplitPointer + ": (" + splits[followed][currentSplitPointer] +" - "+ splits[followed][bestlap.Length - 1] + ") - " + bestlap[currentSplitPointer - 1] + " = " + delta;
+                    if (output != debug)
+                        Console.WriteLine(output);
+                    debug = output;
+
+                }
+
+                return new TimeSpan(0, 0, 0, (Int32)Math.Floor(delta), (Int32)Math.Abs((delta % 1) * 1000));
+            }
+            else
+            {
+                return new TimeSpan();
+            }
         }
 
         public TimeSpan GetDelta(Int32 caridx1, Int32 caridx2)

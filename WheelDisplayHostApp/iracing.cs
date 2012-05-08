@@ -21,6 +21,9 @@ namespace WheelDisplayHostApp
 {
     class iracing
     {
+        // Constants
+        private static Int32 fuelconslaps = 5; // how many laps over fuel consumption is averaged
+
         // API variables
         private iRacingSDK sdk;
         private Int32 carIdx;
@@ -38,6 +41,7 @@ namespace WheelDisplayHostApp
         private TimeSpan delta;
         private TimeSpan prevlap;
         private SessionTypes sessiontype;
+        private Single shiftindicator;
 
         private Single lastTickTrackPos = 0;
         private Double lastTickTime;
@@ -45,8 +49,6 @@ namespace WheelDisplayHostApp
         private Int32 trackLength;
         private TimeDelta timedelta;
         private Boolean lapTimeValid;
-        private Double[] bestlap;
-        private Double[] currentlap;
         private Single[] fuelcons;
         private Int32 fuelconsPtr;
         private Single fuelconsumption;
@@ -63,8 +65,10 @@ namespace WheelDisplayHostApp
         public Int32 LapsRemaining { get { return lapsrem; } set { } }
         public Int32 Position { get { return position; } set { } }
         public TimeSpan LapTime { get { return new TimeSpan(0, 0, 0, (Int32)Math.Floor(lastTickTime - lapStartTime), (Int32)(((lastTickTime - lapStartTime) % 1) * 1000)); } set { } }
+        public TimeSpan BestLap { get { if (timedelta != null) return timedelta.BestLap; else return new TimeSpan(); } set { } }
         public TimeSpan Delta { get { return delta; } set { } }
         public TimeSpan PreviousLap { get { return prevlap; } set { } }
+        public Single ShiftIndicator { get { return shiftindicator; } set { } }
 
         // public enums
         public enum SessionTypes 
@@ -142,15 +146,14 @@ namespace WheelDisplayHostApp
                 // reset laptimes
                 lapStartTime = (Double)sdk.GetData("ReplaySessionTime");
                 lapTimeValid = false;
-                bestlap = new Double[trackLength / 10];
-                currentlap = new Double[trackLength / 10];
 
                 // fuel consumption, last 5 lap rolling
-                fuelcons = new Single[5];
+                fuelcons = new Single[fuelconslaps];
                 fuelconsPtr = 0;
 
                 // init timedelta
                 timedelta = new TimeDelta(trackLength);
+                timedelta.SaveBestLap(carIdx);
 
                 init = true;
             }
@@ -171,6 +174,7 @@ namespace WheelDisplayHostApp
                 speed = (Int32)((Single)sdk.GetData("Speed") * 3.6);
                 fuel = (Int32)((Single)sdk.GetData("FuelLevel"));
                 fuelneed = 0; // TODO
+                shiftindicator = (Single)sdk.GetData("ShiftIndicatorPct");
 
                 lap = (Int32)sdk.GetData("Lap");
                 lapsrem = (Int32)sdk.GetData("SessionLapsRemain");
@@ -191,7 +195,7 @@ namespace WheelDisplayHostApp
                     Single[] driverTrkPos = new Single[64];
                     driverTrkPos = (Single[])sdk.GetData("CarIdxLapDistPct");
 
-                    Int32 lapPointer = (Int32)Math.Floor(Math.Min(driverTrkPos[carIdx], 1.0f) * (trackLength / 10));
+                    Int32 lapPointer = (Int32)Math.Floor((driverTrkPos[carIdx] % 1) * (trackLength / 10));
 
                     timedelta.Update(sessionTime, driverTrkPos);
 
@@ -207,12 +211,6 @@ namespace WheelDisplayHostApp
                             Double laptime = (sessionTime - (1 - tickCorrection) * time) - lapStartTime;
                             prevlap = new TimeSpan(0, 0, 0, (Int32)Math.Floor(laptime), (Int32)Math.Floor((laptime % 1) * 1000));
 
-                            if (currentlap[currentlap.Length - 1] < bestlap[bestlap.Length - 1] || bestlap[bestlap.Length - 1] == 0.0)
-                            {
-                                Array.Copy(currentlap, bestlap, currentlap.Length);
-                            }
-
-                            
                             fuelcons[fuelconsPtr % fuelcons.Length] = (Single)sdk.GetData("FuelLevel");
 
                             // update fuel consumption after one full lap
@@ -234,7 +232,6 @@ namespace WheelDisplayHostApp
                                     fuelneed = (Int32)(fuelcons[fuelconsPtr % fuelcons.Length] - (lapsrem * fuelcons[(fuelconsPtr - 1) % fuelcons.Length]));
                                     fuelconsumption = fuelcons[(fuelconsPtr - 1) % fuelcons.Length] - fuelcons[fuelconsPtr % fuelcons.Length];
                                 }
-                                Console.WriteLine("Fuel level: {0} rate: {1}", fuelcons[fuelconsPtr % fuelcons.Length], (fuelcons[(fuelconsPtr - 1) % fuelcons.Length] - fuelcons[fuelconsPtr % fuelcons.Length]));
                             }
                             fuelconsPtr++;
                         }
@@ -254,11 +251,6 @@ namespace WheelDisplayHostApp
                     {
                         fuelcons = new Single[5];
                         fuelconsPtr = 0;
-                    }
-
-                    if (lapTimeValid && lapPointer >= 0)
-                    {
-                        currentlap[lapPointer] = (sessionTime - lapStartTime);
                     }
 
                     lastTickTrackPos = driverTrkPos[carIdx]; // save for next tick
@@ -281,13 +273,8 @@ namespace WheelDisplayHostApp
 
                         delta = timedelta.GetDelta(carIdx, driverCarIdx[Math.Max(position - 2, 0)]);
                     }
-                    else if (lapPointer >= 0)
-                    {
-                        Double diff = currentlap[lapPointer] - bestlap[lapPointer];
-                        delta = new TimeSpan(0, 0, 0, (Int32)Math.Floor(diff), (Int32)Math.Abs((diff % 1) * 1000));
-                    }
                     else
-                        delta = new TimeSpan();
+                        delta = timedelta.GetBestLapDelta(driverTrkPos[carIdx] % 1);
                 }
             }
             else
