@@ -72,6 +72,8 @@ namespace WheelDisplayHostApp
                 USBStatusValue.Text = "connected";
 
                 if (ir.Gear < 0)
+                    u.updateType(usb.types.Gear, 7);
+                else if (ir.Gear == 0)
                     u.updateType(usb.types.Gear, 8);
                 else
                     u.updateType(usb.types.Gear, (short)(ir.Gear - 1));
@@ -101,7 +103,11 @@ namespace WheelDisplayHostApp
                 laptimebytes |= (ushort)((UInt16)(Math.Abs(ir.LapTime.Seconds)) << 3);
                 laptimebytes |= (ushort)((UInt16)(Math.Abs(ir.LapTime.Milliseconds / 100)));
 
-                u.updateType(usb.types.LapTime, unchecked((short)laptimebytes));    
+                u.updateType(usb.types.LapTime, unchecked((short)laptimebytes));
+
+                ushort shiftleds = (ushort)((1 << (Int16)Math.Floor(ir.ShiftIndicator * 7.1f)) - 1);
+
+                u.updateType(usb.types.ShiftLEDs, unchecked((short)shiftleds));
             }
             else if (ir != null)
             {

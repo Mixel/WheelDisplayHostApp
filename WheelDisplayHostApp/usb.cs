@@ -32,6 +32,7 @@ namespace WheelDisplayHostApp
             LapsRemaining = 0x05,
             Position = 0x06,
             RPM = 0x07,
+            ShiftLEDs = 0x08,
 
             LapTime = 0x10,
             Delta = 0x11,

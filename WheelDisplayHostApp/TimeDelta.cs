@@ -101,8 +101,6 @@ namespace WheelDisplayHostApp
             }
         }
 
-        private string debug;
-
         public TimeSpan GetBestLapDelta(Single trackPosition)
         {
             if (validbestlap)
@@ -111,30 +109,11 @@ namespace WheelDisplayHostApp
                 Double delta;
 
                 if (currentSplitPointer == 0)
-                {
                     delta = (splits[followed][0] - lapstarttime) - bestlap[bestlap.Length - 1];
-                    string output = currentSplitPointer + ": (" + splits[followed][0] + " - " + lapstarttime + ") - " + bestlap[bestlap.Length - 1] + " = " + delta;
-                    if (output != debug)
-                        Console.WriteLine(output);
-                    debug = output;
-                }
                 else if (currentSplitPointer == (bestlap.Length - 1))
-                {
                     delta = (splits[followed][currentSplitPointer] - lapstarttime) - bestlap[bestlap.Length - 1];
-                    string output = currentSplitPointer + ": (" + splits[followed][currentSplitPointer] + " - " + splits[followed][0] + ") - " + bestlap[bestlap.Length - 1] + " = " + delta;
-                    if (output != debug)
-                        Console.WriteLine(output);
-                    debug = output;
-                }
                 else
-                {
                     delta = (splits[followed][currentSplitPointer] - splits[followed][bestlap.Length - 1]) - bestlap[currentSplitPointer - 1];
-                    string output = currentSplitPointer + ": (" + splits[followed][currentSplitPointer] +" - "+ splits[followed][bestlap.Length - 1] + ") - " + bestlap[currentSplitPointer - 1] + " = " + delta;
-                    if (output != debug)
-                        Console.WriteLine(output);
-                    debug = output;
-
-                }
 
                 return new TimeSpan(0, 0, 0, (Int32)Math.Floor(delta), (Int32)Math.Abs((delta % 1) * 1000));
             }
