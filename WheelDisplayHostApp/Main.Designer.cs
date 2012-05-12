@@ -30,6 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.BestLap = new System.Windows.Forms.Label();
+            this.RPMLeds = new System.Windows.Forms.Label();
             this.FuelConsumption = new System.Windows.Forms.Label();
             this.PreviousLap = new System.Windows.Forms.Label();
             this.Delta = new System.Windows.Forms.Label();
@@ -42,6 +44,8 @@
             this.Fuel = new System.Windows.Forms.Label();
             this.Speed = new System.Windows.Forms.Label();
             this.Gear = new System.Windows.Forms.Label();
+            this.BestLapValue = new System.Windows.Forms.Label();
+            this.RPMLedsValue = new System.Windows.Forms.ProgressBar();
             this.FuelConsumptionValue = new System.Windows.Forms.Label();
             this.PreviousLapValue = new System.Windows.Forms.Label();
             this.DeltaValue = new System.Windows.Forms.Label();
@@ -61,15 +65,14 @@
             this.USBStatusValue = new System.Windows.Forms.ToolStripStatusLabel();
             this.SimStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.SimStatusValue = new System.Windows.Forms.ToolStripStatusLabel();
-            this.RPMLeds = new System.Windows.Forms.Label();
-            this.RPMLedsValue = new System.Windows.Forms.ProgressBar();
-            this.BestLap = new System.Windows.Forms.Label();
-            this.BestLapValue = new System.Windows.Forms.Label();
+            this.Backlight = new System.Windows.Forms.Label();
+            this.BacklightValue = new System.Windows.Forms.NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
             this.StatusBar.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.BacklightValue)).BeginInit();
             this.SuspendLayout();
             // 
             // splitContainer1
@@ -81,6 +84,7 @@
             // 
             // splitContainer1.Panel1
             // 
+            this.splitContainer1.Panel1.Controls.Add(this.Backlight);
             this.splitContainer1.Panel1.Controls.Add(this.BestLap);
             this.splitContainer1.Panel1.Controls.Add(this.RPMLeds);
             this.splitContainer1.Panel1.Controls.Add(this.FuelConsumption);
@@ -99,6 +103,7 @@
             // 
             // splitContainer1.Panel2
             // 
+            this.splitContainer1.Panel2.Controls.Add(this.BacklightValue);
             this.splitContainer1.Panel2.Controls.Add(this.BestLapValue);
             this.splitContainer1.Panel2.Controls.Add(this.RPMLedsValue);
             this.splitContainer1.Panel2.Controls.Add(this.FuelConsumptionValue);
@@ -114,10 +119,30 @@
             this.splitContainer1.Panel2.Controls.Add(this.SpeedValue);
             this.splitContainer1.Panel2.Controls.Add(this.GearValue);
             this.splitContainer1.Panel2MinSize = 20;
-            this.splitContainer1.Size = new System.Drawing.Size(292, 313);
+            this.splitContainer1.Size = new System.Drawing.Size(292, 353);
             this.splitContainer1.SplitterDistance = 200;
             this.splitContainer1.TabIndex = 0;
             this.splitContainer1.TabStop = false;
+            // 
+            // BestLap
+            // 
+            this.BestLap.AutoSize = true;
+            this.BestLap.Location = new System.Drawing.Point(3, 218);
+            this.BestLap.Name = "BestLap";
+            this.BestLap.Padding = new System.Windows.Forms.Padding(3);
+            this.BestLap.Size = new System.Drawing.Size(51, 19);
+            this.BestLap.TabIndex = 13;
+            this.BestLap.Text = "Best lap";
+            // 
+            // RPMLeds
+            // 
+            this.RPMLeds.AutoSize = true;
+            this.RPMLeds.Location = new System.Drawing.Point(3, 256);
+            this.RPMLeds.Name = "RPMLeds";
+            this.RPMLeds.Padding = new System.Windows.Forms.Padding(3);
+            this.RPMLeds.Size = new System.Drawing.Size(59, 19);
+            this.RPMLeds.TabIndex = 12;
+            this.RPMLeds.Text = "RPM leds";
             // 
             // FuelConsumption
             // 
@@ -238,6 +263,23 @@
             this.Gear.Size = new System.Drawing.Size(36, 19);
             this.Gear.TabIndex = 0;
             this.Gear.Text = "Gear";
+            // 
+            // BestLapValue
+            // 
+            this.BestLapValue.AutoSize = true;
+            this.BestLapValue.Location = new System.Drawing.Point(3, 218);
+            this.BestLapValue.Name = "BestLapValue";
+            this.BestLapValue.Padding = new System.Windows.Forms.Padding(3);
+            this.BestLapValue.Size = new System.Drawing.Size(19, 19);
+            this.BestLapValue.TabIndex = 13;
+            this.BestLapValue.Text = "0";
+            // 
+            // RPMLedsValue
+            // 
+            this.RPMLedsValue.Location = new System.Drawing.Point(3, 256);
+            this.RPMLedsValue.Name = "RPMLedsValue";
+            this.RPMLedsValue.Size = new System.Drawing.Size(70, 19);
+            this.RPMLedsValue.TabIndex = 12;
             // 
             // FuelConsumptionValue
             // 
@@ -377,7 +419,7 @@
             this.USBStatusValue,
             this.SimStatus,
             this.SimStatusValue});
-            this.StatusBar.Location = new System.Drawing.Point(0, 291);
+            this.StatusBar.Location = new System.Drawing.Point(0, 331);
             this.StatusBar.Name = "StatusBar";
             this.StatusBar.Size = new System.Drawing.Size(292, 22);
             this.StatusBar.TabIndex = 1;
@@ -407,48 +449,35 @@
             this.SimStatusValue.Size = new System.Drawing.Size(76, 17);
             this.SimStatusValue.Text = "not connected";
             // 
-            // RPMLeds
+            // Backlight
             // 
-            this.RPMLeds.AutoSize = true;
-            this.RPMLeds.Location = new System.Drawing.Point(3, 256);
-            this.RPMLeds.Name = "RPMLeds";
-            this.RPMLeds.Padding = new System.Windows.Forms.Padding(3);
-            this.RPMLeds.Size = new System.Drawing.Size(59, 19);
-            this.RPMLeds.TabIndex = 12;
-            this.RPMLeds.Text = "RPM leds";
+            this.Backlight.AutoSize = true;
+            this.Backlight.Location = new System.Drawing.Point(3, 284);
+            this.Backlight.Name = "Backlight";
+            this.Backlight.Padding = new System.Windows.Forms.Padding(3);
+            this.Backlight.Size = new System.Drawing.Size(57, 19);
+            this.Backlight.TabIndex = 14;
+            this.Backlight.Text = "Backlight";
             // 
-            // RPMLedsValue
+            // BacklightValue
             // 
-            this.RPMLedsValue.Location = new System.Drawing.Point(3, 256);
-            this.RPMLedsValue.Name = "RPMLedsValue";
-            this.RPMLedsValue.Size = new System.Drawing.Size(70, 19);
-            this.RPMLedsValue.TabIndex = 12;
-            // 
-            // BestLap
-            // 
-            this.BestLap.AutoSize = true;
-            this.BestLap.Location = new System.Drawing.Point(3, 218);
-            this.BestLap.Name = "BestLap";
-            this.BestLap.Padding = new System.Windows.Forms.Padding(3);
-            this.BestLap.Size = new System.Drawing.Size(51, 19);
-            this.BestLap.TabIndex = 13;
-            this.BestLap.Text = "Best lap";
-            // 
-            // BestLapValue
-            // 
-            this.BestLapValue.AutoSize = true;
-            this.BestLapValue.Location = new System.Drawing.Point(3, 218);
-            this.BestLapValue.Name = "BestLapValue";
-            this.BestLapValue.Padding = new System.Windows.Forms.Padding(3);
-            this.BestLapValue.Size = new System.Drawing.Size(19, 19);
-            this.BestLapValue.TabIndex = 13;
-            this.BestLapValue.Text = "0";
+            this.BacklightValue.AutoSize = true;
+            this.BacklightValue.Location = new System.Drawing.Point(3, 282);
+            this.BacklightValue.Name = "BacklightValue";
+            this.BacklightValue.Size = new System.Drawing.Size(70, 20);
+            this.BacklightValue.TabIndex = 14;
+            this.BacklightValue.Value = new decimal(new int[] {
+            25,
+            0,
+            0,
+            0});
+            this.BacklightValue.ValueChanged += new System.EventHandler(this.BacklightValue_ValueChanged);
             // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(292, 313);
+            this.ClientSize = new System.Drawing.Size(292, 353);
             this.Controls.Add(this.StatusBar);
             this.Controls.Add(this.splitContainer1);
             this.Name = "Main";
@@ -462,6 +491,7 @@
             this.splitContainer1.ResumeLayout(false);
             this.StatusBar.ResumeLayout(false);
             this.StatusBar.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.BacklightValue)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -505,6 +535,8 @@
         private System.Windows.Forms.ProgressBar RPMLedsValue;
         private System.Windows.Forms.Label BestLap;
         private System.Windows.Forms.Label BestLapValue;
+        private System.Windows.Forms.Label Backlight;
+        private System.Windows.Forms.NumericUpDown BacklightValue;
     }
 }
 

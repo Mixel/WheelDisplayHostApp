@@ -84,6 +84,7 @@ namespace WheelDisplayHostApp
                 u.updateType(usb.types.Fuel, (short)ir.Fuel);
                 u.updateType(usb.types.FuelNeeded, (short)ir.FuelNeeded);
                 u.updateType(usb.types.LapsRemaining, (short)ir.LapsRemaining);
+                u.updateType(usb.types.Position, (short)ir.Position);
                 
                 ushort deltabytes = 0;
                 if (ir.Delta.TotalMilliseconds < 0)
@@ -114,6 +115,11 @@ namespace WheelDisplayHostApp
                 USBStatusValue.Text = "not connected";
                 u.initialize();
             }
+        }
+
+        private void BacklightValue_ValueChanged(object sender, EventArgs e)
+        {
+            u.updateType(usb.types.Backlight, unchecked((short)(1024 - ((Single)BacklightValue.Value * 10.24))));
         }
     }
 }

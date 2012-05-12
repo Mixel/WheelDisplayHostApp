@@ -27,6 +27,7 @@ namespace WheelDisplayHostApp
         // API variables
         private iRacingSDK sdk;
         private Int32 carIdx;
+        private Int32 lastSesInfoUpdate;
 
         // internal variables
         private Boolean init;
@@ -93,7 +94,7 @@ namespace WheelDisplayHostApp
             // check connection
             if (sdk.IsConnected())
             {
-                string yaml = sdk.GetSessionInfo();
+                String yaml = sdk.GetSessionInfo();
 
                 // caridx
                 Int32 start = yaml.IndexOf("DriverCarIdx: ") + "DriverCarIdx: ".Length;
@@ -103,11 +104,10 @@ namespace WheelDisplayHostApp
                 // track length
                 start = yaml.IndexOf("TrackLength: ") + "TrackLength: ".Length;
                 end = yaml.IndexOf("km\n", start);
-                string dbg = yaml.Substring(start, end - start);
+                String dbg = yaml.Substring(start, end - start);
                 trackLength = (Int32)(Single.Parse(yaml.Substring(start, end - start)) * 1000);
 
                 // session types
-                //string pattern = @"SessionNum: (\d+)"; //SessionType: (\d+)";
                 RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.Compiled;
                 MatchCollection sessionNums, sessionTypes;
                 Regex optionRegex = new Regex(@"SessionNum: (\d+)", options);
@@ -121,7 +121,7 @@ namespace WheelDisplayHostApp
                 Int32 currentSessionNum = (Int32)sdk.GetData("SessionNum");
 
                 // Iterate matches
-                for (int ctr = 0; ctr < Math.Min(sessionNums.Count, sessionTypes.Count); ctr++)
+                for (Int32 ctr = 0; ctr < Math.Min(sessionNums.Count, sessionTypes.Count); ctr++)
                 {
                     if (Int32.Parse(sessionNums[ctr].Value.Substring(12)) == currentSessionNum)
                     {
@@ -274,8 +274,23 @@ namespace WheelDisplayHostApp
                         delta = timedelta.GetDelta(carIdx, driverCarIdx[Math.Max(position - 2, 0)]);
                     }
                     else
+                    {
+                        if (sdk.Header.SessionInfoUpdate != lastSesInfoUpdate)
+                        {
+                            // parse position
+                            String yaml = sdk.GetSessionInfo();
+
+                            Int32 sessionmatch = yaml.IndexOf(" - SessionNum: " + ((Int32)sdk.GetData("SessionNum")).ToString());
+                            Int32 carmatch = yaml.IndexOf("CarIdx: " + carIdx.ToString(), sessionmatch);
+                            Int32 positionmatch = yaml.LastIndexOf("Position:", carmatch);
+                            position = Int32.Parse(yaml.Substring(positionmatch + "Position:".Length, 2));
+                        }
+
                         delta = timedelta.GetBestLapDelta(driverTrkPos[carIdx] % 1);
+                    }
                 }
+
+                lastSesInfoUpdate = sdk.Header.SessionInfoUpdate;
             }
             else
             {
