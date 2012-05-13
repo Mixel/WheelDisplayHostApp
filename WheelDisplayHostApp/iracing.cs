@@ -43,6 +43,7 @@ namespace WheelDisplayHostApp
         private TimeSpan prevlap;
         private SessionTypes sessiontype;
         private Single shiftindicator;
+        private Boolean pitlimiter;
 
         private Single lastTickTrackPos = 0;
         private Double lastTickTime;
@@ -70,6 +71,7 @@ namespace WheelDisplayHostApp
         public TimeSpan Delta { get { return delta; } set { } }
         public TimeSpan PreviousLap { get { return prevlap; } set { } }
         public Single ShiftIndicator { get { return shiftindicator; } set { } }
+        public Boolean PitLimiter { get { return pitlimiter; } set { } }
 
         // public enums
         public enum SessionTypes 
@@ -175,6 +177,12 @@ namespace WheelDisplayHostApp
                 fuel = (Int32)((Single)sdk.GetData("FuelLevel"));
                 fuelneed = 0; // TODO
                 shiftindicator = (Single)sdk.GetData("ShiftIndicatorPct");
+
+                Int32 enwarn = (Int32)sdk.GetData("EngineWarnings");
+                if (((Int32)sdk.GetData("EngineWarnings") & 0x10) > 0)
+                    pitlimiter = true;
+                else
+                    pitlimiter = false;
 
                 lap = (Int32)sdk.GetData("Lap");
                 lapsrem = (Int32)sdk.GetData("SessionLapsRemain");
@@ -283,7 +291,10 @@ namespace WheelDisplayHostApp
                             Int32 sessionmatch = yaml.IndexOf(" - SessionNum: " + ((Int32)sdk.GetData("SessionNum")).ToString());
                             Int32 carmatch = yaml.IndexOf("CarIdx: " + carIdx.ToString(), sessionmatch);
                             Int32 positionmatch = yaml.LastIndexOf("Position:", carmatch);
-                            position = Int32.Parse(yaml.Substring(positionmatch + "Position:".Length, 2));
+                            if (positionmatch < 0)
+                                position = 0;
+                            else
+                                position = Int32.Parse(yaml.Substring(positionmatch + "Position:".Length, 2));
                         }
 
                         delta = timedelta.GetBestLapDelta(driverTrkPos[carIdx] % 1);

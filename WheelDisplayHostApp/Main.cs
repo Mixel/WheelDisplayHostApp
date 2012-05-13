@@ -14,6 +14,9 @@ namespace WheelDisplayHostApp
         private iracing ir;
         private usb u;
 
+        private DateTime ledBlink;
+        private static Int32 blinkDuration = 500;
+
         public Main()
         {
             InitializeComponent();
@@ -22,7 +25,8 @@ namespace WheelDisplayHostApp
         private void Main_Load(object sender, EventArgs e)
         {
             ir = new iracing();
-            u = new usb(); 
+            u = new usb();
+            ledBlink = DateTime.Now;
         }
 
         private void apiUpdater_Tick(object sender, EventArgs e)
@@ -106,9 +110,25 @@ namespace WheelDisplayHostApp
 
                 u.updateType(usb.types.LapTime, unchecked((short)laptimebytes));
 
-                ushort shiftleds = (ushort)((1 << (Int16)Math.Floor(ir.ShiftIndicator * 7.1f)) - 1);
 
-                u.updateType(usb.types.ShiftLEDs, unchecked((short)shiftleds));
+
+                if (ir.PitLimiter)
+                {
+                    if ((DateTime.Now - ledBlink).TotalMilliseconds > blinkDuration)
+                    {
+                        if (((DateTime.Now.Millisecond / blinkDuration) % 2) > 0)
+                            u.updateType(usb.types.ShiftLEDs, 0x00);
+                        else
+                        {
+                            u.updateType(usb.types.ShiftLEDs, 0xff);
+                        }
+                    }
+                }
+                else
+                {
+                    ushort shiftleds = (ushort)((1 << (Int16)Math.Floor(ir.ShiftIndicator * 7.1f)) - 1);
+                    u.updateType(usb.types.ShiftLEDs, unchecked((short)shiftleds));
+                }
             }
             else if (ir != null)
             {
