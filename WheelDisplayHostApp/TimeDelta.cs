@@ -1,4 +1,62 @@
-﻿using System;
+﻿/*
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ * 
+ * TimeDelta class
+ * Calculates time difference between two drivers or previously recorded best lap
+ * 
+ * Constants:
+ * Int32 maxcars: length of track positions array
+ * Int32 splitdistance: split length, too low value will skip splits with fast cars 
+ * and too big will reduce update rate. 10 meters is a good start value.
+ * 
+ * Interfaces:
+ *  TimeDelta(Single length)
+ *      Class constructor
+ *      Parameters:
+ *          length: Track length in some format, see splitdistance constant
+ * 
+ *  Update(Double timestamp, Single[] trackPosition)
+ *      Updates data using timestamp and car positions. Also handles best lap if car 
+ *      id is set, see SaveBestLap().
+ *      Parameters:
+ *          timestamp: increasing timestamp
+ *          trackPosition: array of car positions indexed with car ids
+ *  
+ *  SaveBestLap(Int32 caridx)
+ *      Sets player's car id, which will be followed and best lap will be saved for 
+ *      comparison. Set -1 to disable.
+ *      Parameters:
+ *          caridx: car id for car to be followed
+ *  
+ *  GetBestLapDelta(Single trackPosition)
+ *      Gets delta to previously saved best lap
+ *      Parameters:
+ *          trackPosition: Current trackposition to which best lap is compared to.
+ *          Uses data from Update()-function to calculate current laptime.
+ *          
+ *  GetDelta(Int32 caridx1, Int32 caridx2)
+ *      Gets delta between two cars, doesn't take care if drivers are lapped.
+ *      Returns time of caridx1-caridx2
+ *      Parameters:
+ *          caridx1: First driver car id (car behind)
+ *          caridx2: Second driver car id (car infront)
+ * 
+ *  BestLap
+ *      Gets lap time of best lap
+*/
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +66,8 @@ namespace WheelDisplayHostApp
     class TimeDelta
     {
         private static Int32 maxcars = 64;
+        private static Int32 splitdistance = 10;
+
         private Double[][] splits = new Double[maxcars][];
         private Int32[] splitPointer = new Int32[maxcars];
         private Single splitLength;
@@ -21,7 +81,7 @@ namespace WheelDisplayHostApp
         public TimeDelta(Single length)
         {
             // split times every 10 meters
-            Int32 arraySize = (Int32)Math.Round(length / 10);
+            Int32 arraySize = (Int32)Math.Round(length / splitdistance);
 
             // set split length
             splitLength = (Single)(1.0 / (Double)arraySize);
