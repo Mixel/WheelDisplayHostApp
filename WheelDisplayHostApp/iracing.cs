@@ -33,7 +33,7 @@ namespace iRSDKSharp
 
 namespace WheelDisplayHostApp
 {
-    class iracing
+    class iRacing
     {
         // Constants
         private static Int32 fuelconslaps = 5; // how many laps over fuel consumption is averaged
@@ -96,7 +96,7 @@ namespace WheelDisplayHostApp
             race
         }
 
-        public iracing()
+        public iRacing()
         {
             // Forcing US locale for correct string to float conversion
             System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
@@ -144,16 +144,16 @@ namespace WheelDisplayHostApp
                         switch (sessionTypes[ctr].Value.Substring(13).Trim())
                         {
                             case "Practice":
-                                sessiontype = iracing.SessionTypes.practice;
+                                sessiontype = iRacing.SessionTypes.practice;
                                 break;
                             case "Qualify":
-                                sessiontype = iracing.SessionTypes.qualify;
+                                sessiontype = iRacing.SessionTypes.qualify;
                                 break;
                             case "Race":
-                                sessiontype = iracing.SessionTypes.race;
+                                sessiontype = iRacing.SessionTypes.race;
                                 break;
                             default:
-                                sessiontype = iracing.SessionTypes.invalid;
+                                sessiontype = iRacing.SessionTypes.invalid;
                                 break;
                         }
                     }      
@@ -189,7 +189,6 @@ namespace WheelDisplayHostApp
                 rpm = (Int32)(Single)sdk.GetData("RPM");
                 speed = (Int32)((Single)sdk.GetData("Speed") * 3.6);
                 fuel = (Int32)((Single)sdk.GetData("FuelLevel"));
-                fuelneed = 0; // TODO
                 shiftindicator = (Single)sdk.GetData("ShiftIndicatorPct");
 
                 Int32 enwarn = (Int32)sdk.GetData("EngineWarnings");

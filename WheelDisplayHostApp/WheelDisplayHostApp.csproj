@@ -55,7 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GearRatio.cs" />
-    <Compile Include="iracing.cs" />
+    <Compile Include="iRacing.cs" />
     <Compile Include="Main.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -64,6 +64,7 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="rFactor2.cs" />
     <Compile Include="TimeDelta.cs" />
     <Compile Include="usb.cs" />
     <EmbeddedResource Include="Main.resx">
