@@ -235,6 +235,8 @@ namespace WheelDisplayHostApp
             {
                 USBStatusValue.Text = "not connected";
                 u.initialize();
+                if(u.isInitialized)
+                    u.updateType(usb.types.Backlight, unchecked((short)(1024 - ((Single)BacklightValue.Value * 10.24))));
             }
         }
 
