@@ -11,6 +11,7 @@ namespace WheelDisplayHostApp
     {
         // config
         private static Int32 maxcars = 64;
+        private static Int32 fuelconslaps = 5; // how many laps over fuel consumption is averaged
 
         // MMF access
         MemoryMappedFile mmap;
@@ -29,10 +30,23 @@ namespace WheelDisplayHostApp
         private Int32 totallaps;
         private Int32 position;
         private TimeSpan delta;
-        private TimeSpan prevlap;
+        private Double prevlap;
         private Single shiftindicator;
         private Int32 pitlimiter;
-        private Double[] trackposition;
+        private Double[] driverTrkPos;
+        private Int32 carinfront;
+
+        private Double lastTickTrackPos = 0;
+        private Double lastTickTime;
+        private Double lapStartTime = -1;
+        private Double trackLength;
+        private TimeDelta timedelta;
+        private Boolean lapTimeValid;
+        private Double[] fuelcons;
+        private Int32 fuelconsPtr;
+        private Double fuelconsumption;
+        private Int32 sessiontype;
+        private Boolean needReset;
 
         // interface
         public Int32 Speed { get { return (Int32)speed; } set { } }
@@ -40,21 +54,21 @@ namespace WheelDisplayHostApp
         public Int32 RPM { get { return (Int32)rpm; } set { } }
         public Int32 Fuel { get { return (Int32)Math.Floor(fuel); } set { } }
         public Int32 FuelNeeded { get { return fuelneed; } set { } }
-        //public Single fuelConsumption { get { return fuelconsumption; } set { } }
+        public Double fuelConsumption { get { return fuelconsumption; } set { } }
         public Int32 Lap { get { return lap; } set { } }
         public Int32 LapsRemaining { get { if (totallaps > 0) return totallaps - lap; else return 0; } set { } }
         public Int32 Position { get { return position; } set { } }
-        //public TimeSpan LapTime { get { return new TimeSpan(0, 0, 0, (Int32)Math.Floor(lastTickTime - lapStartTime), (Int32)(((lastTickTime - lapStartTime) % 1) * 1000)); } set { } }
-        //public TimeSpan BestLap { get { if (timedelta != null) return timedelta.BestLap; else return new TimeSpan(); } set { } }
+        public TimeSpan LapTime { get { return new TimeSpan(0, 0, 0, (Int32)Math.Floor(lastTickTime - lapStartTime), (Int32)(((lastTickTime - lapStartTime) % 1) * 1000)); } set { } }
+        public TimeSpan BestLap { get { if (timedelta != null) return timedelta.BestLap; else return new TimeSpan(); } set { } }
         public TimeSpan Delta { get { return delta; } set { } }
-        public TimeSpan PreviousLap { get { return prevlap; } set { } }
+        public TimeSpan PreviousLap { get { return new TimeSpan(0, 0, 0, 0, (Int32)(prevlap*1000)); } set { } }
         public Single ShiftIndicator { get { return shiftindicator; } set { } }
         public Boolean PitLimiter { get { if(pitlimiter != 0) return true; else return false; } set { } }
 
         public rFactor2()
         {
             initialized = false;
-            trackposition = new Double[maxcars];
+            reset();
         }
 
         public void initialize()
@@ -67,6 +81,7 @@ namespace WheelDisplayHostApp
 
                 shmem = mmap.CreateViewAccessor(0, 1024, MemoryMappedFileAccess.Read);
 
+                needReset = true;
                 initialized = true;
             }
             catch
@@ -77,13 +92,27 @@ namespace WheelDisplayHostApp
 
         public Boolean isInitialized { get { return initialized; } set { } }
 
+        private void reset() {
+            // empty track position
+            driverTrkPos = new Double[maxcars];
+
+            // reset laptimes
+            lapStartTime = 0;
+            lapTimeValid = false;
+
+            // fuel consumption, last 5 lap rolling
+            fuelcons = new Double[fuelconslaps];
+            fuelconsPtr = 0;
+
+            // init timedelta
+            timedelta = new TimeDelta((Int32)trackLength);
+            timedelta.SaveBestLap(carid);
+        }
+
         public void updateData() {
 
             if (initialized)
             {
-                //shmem.Read(0, out data);
-                //Console.WriteLine("{0}\n", data.trackpositions[0]);
-
                 Int64 pos = 0;
 
                 carid = shmem.ReadInt32(pos);
@@ -104,6 +133,12 @@ namespace WheelDisplayHostApp
                 pitlimiter = shmem.ReadInt32(pos);
                 pos += sizeof(Int32);
 
+                sessiontype = shmem.ReadInt32(pos);
+                pos += sizeof(Int32);
+
+                carinfront = shmem.ReadInt32(pos);
+                pos += sizeof(Int32);
+
                 timestamp = shmem.ReadDouble(pos);
                 pos += sizeof(Double);
 
@@ -116,14 +151,89 @@ namespace WheelDisplayHostApp
                 fuel = shmem.ReadDouble(pos);
                 pos += sizeof(Double);
 
+                prevlap = shmem.ReadDouble(pos);
+                pos += sizeof(Double);
+
+                trackLength = shmem.ReadDouble(pos);
+                pos += sizeof(Double);
+
                 for (Int32 i = 0; i < maxcars; i++)
                 {
-                    trackposition[i] = shmem.ReadDouble(pos);
+                    driverTrkPos[i] = shmem.ReadDouble(pos);
                     pos += sizeof(Double);
                 }
 
-                Console.WriteLine("{0}", trackposition[carid]);
+                // process
 
+                if (needReset && trackLength > 0)
+                {
+                    reset();
+                    needReset = false;
+                }
+
+                timedelta.Update(timestamp, driverTrkPos);
+
+                if (driverTrkPos[carid] < 0.1 && lastTickTrackPos > 0.9)
+                {
+                    Double distance = (1 - lastTickTrackPos) + driverTrkPos[carid];
+                    Double time = timestamp - lastTickTime;
+                    Double tickCorrection = (1 - lastTickTrackPos) / distance;
+
+                    // save lap time
+                    if (lapTimeValid)
+                    {
+                        Double laptime = (timestamp - (1 - tickCorrection) * time) - lapStartTime;
+                        prevlap = laptime;
+
+                        fuelcons[fuelconsPtr % fuelcons.Length] = fuel;
+
+                        // update fuel consumption after one full lap
+                        if (fuelconsPtr > 0)
+                        {
+                            if (fuelconsPtr >= fuelcons.Length)
+                            {
+                                Double[] consrate = new Double[fuelcons.Length - 1];
+                                Int32 j = 0;
+                                for (int i = fuelconsPtr; i < fuelconsPtr + consrate.Length; i++)
+                                {
+                                    consrate[j++] = fuelcons[(i + 1) % fuelcons.Length] - fuelcons[(i + 2) % fuelcons.Length];
+                                }
+                                fuelneed = (Int32)(fuelcons[fuelconsPtr % fuelcons.Length] - ((totallaps-lap) * consrate.Average()));
+                                fuelconsumption = consrate.Average();
+                            }
+                            else if (fuelconsPtr > 0)
+                            {
+                                fuelneed = (Int32)(fuelcons[fuelconsPtr % fuelcons.Length] - ((totallaps - lap) * fuelcons[(fuelconsPtr - 1) % fuelcons.Length]));
+                                fuelconsumption = fuelcons[(fuelconsPtr - 1) % fuelcons.Length] - fuelcons[fuelconsPtr % fuelcons.Length];
+                            }
+                        }
+                        fuelconsPtr++;
+                    }
+
+                    // start new lap
+                    lapStartTime = timestamp - (1 - tickCorrection) * time;
+                    lapTimeValid = true;
+
+                    // reset fuel consumption when in pits
+                    if (driverTrkPos[carid] < 0)
+                    {
+                        fuelcons = new Double[fuelconslaps];
+                        fuelconsPtr = 0;
+                    }
+                }
+                else if (Math.Abs(driverTrkPos[carid] - lastTickTrackPos) > 0.1)
+                {
+                    // invalidate lap time if jumping too much
+                    lapTimeValid = false;
+                }
+
+                lastTickTrackPos = driverTrkPos[carid]; // save for next tick
+                lastTickTime = timestamp;
+
+                if (sessiontype >= 10) // if (race)
+                    delta = timedelta.GetDelta(carid, carinfront);
+                else
+                    delta = timedelta.GetBestLapDelta(driverTrkPos[carid] % 1);
             }
         }
     }

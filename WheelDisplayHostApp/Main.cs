@@ -75,7 +75,6 @@ namespace WheelDisplayHostApp
                 if (ir.Delta.TotalMilliseconds < 0)
                     DeltaValue.Text = "-" + Math.Abs(ir.Delta.Minutes).ToString() + ":" + Math.Abs(ir.Delta.Seconds).ToString("D2") + "." + Math.Abs(ir.Delta.Milliseconds).ToString("D3");
                 else
-
                     DeltaValue.Text = ir.Delta.Minutes.ToString() + ":" + ir.Delta.Seconds.ToString("D2") + "." + ir.Delta.Milliseconds.ToString("D3");
             }
             else if (rf != null && rf.isInitialized)
@@ -94,14 +93,19 @@ namespace WheelDisplayHostApp
                 SpeedValue.Text = rf.Speed.ToString() + " km/h";
                 FuelValue.Text = rf.Fuel.ToString() + " ltr";
                 FuelNeededValue.Text = rf.FuelNeeded.ToString() + " ltr";
-                //FuelConsumptionValue.Text = Math.Round(rf.fuelConsumption, 1).ToString() + " ltr/lap";
+                FuelConsumptionValue.Text = Math.Round(rf.fuelConsumption, 1).ToString() + " ltr/lap";
                 LapValue.Text = rf.Lap.ToString();
                 LapsRemainingValue.Text = rf.LapsRemaining.ToString();
                 PositionValue.Text = rf.Position.ToString();
-                //LapTimeValue.Text = rf.LapTime.Minutes.ToString() + ":" + ir.LapTime.Seconds.ToString("D2") + "." + ir.LapTime.Milliseconds.ToString("D3");
-                //BestLapValue.Text = rf.BestLap.Minutes.ToString() + ":" + ir.BestLap.Seconds.ToString("D2") + "." + ir.BestLap.Milliseconds.ToString("D3");
-                PreviousLapValue.Text = rf.PreviousLap.Minutes.ToString() + ":" + ir.PreviousLap.Seconds.ToString("D2") + "." + ir.PreviousLap.Milliseconds.ToString("D3");
+                LapTimeValue.Text = rf.LapTime.Minutes.ToString() + ":" + rf.LapTime.Seconds.ToString("D2") + "." + rf.LapTime.Milliseconds.ToString("D3");
+                BestLapValue.Text = rf.BestLap.Minutes.ToString() + ":" + rf.BestLap.Seconds.ToString("D2") + "." + rf.BestLap.Milliseconds.ToString("D3");
+                PreviousLapValue.Text = rf.PreviousLap.Minutes.ToString() + ":" + rf.PreviousLap.Seconds.ToString("D2") + "." + rf.PreviousLap.Milliseconds.ToString("D3");
                 RPMLedsValue.Value = (Int32)Math.Floor(rf.ShiftIndicator * 100);
+
+                if (rf.Delta.TotalMilliseconds < 0)
+                    DeltaValue.Text = "-" + Math.Abs(rf.Delta.Minutes).ToString() + ":" + Math.Abs(rf.Delta.Seconds).ToString("D2") + "." + Math.Abs(rf.Delta.Milliseconds).ToString("D3");
+                else
+                    DeltaValue.Text = rf.Delta.Minutes.ToString() + ":" + rf.Delta.Seconds.ToString("D2") + "." + rf.Delta.Milliseconds.ToString("D3");
             }
             else
             {

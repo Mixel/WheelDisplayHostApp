@@ -104,7 +104,13 @@ namespace WheelDisplayHostApp
 
         public TimeSpan BestLap { get { if (validbestlap) return new TimeSpan(0, 0, 0, (Int32)bestlap[bestlap.Length - 1], (Int32)((bestlap[bestlap.Length - 1] % 1) * 1000)); else return new TimeSpan(); } set { } }
 
-        public void Update(Double timestamp, Single[] trackPosition) 
+        public void Update(Double timestamp, Single[] trackPosition)
+        {
+            Double[] temp = Array.ConvertAll(trackPosition, item => (Double)item);
+            Update(timestamp, temp);
+        }
+
+        public void Update(Double timestamp, Double[] trackPosition) 
         {
             // sanity check
             if (timestamp > prevTimestamp)
@@ -121,8 +127,8 @@ namespace WheelDisplayHostApp
                         if (currentSplitPointer != splitPointer[i])
                         {
                             // interpolate
-                            Single distance = trackPosition[i] - (currentSplitPointer * splitLength);
-                            Single correction = distance / splitLength;
+                            Double distance = trackPosition[i] - (currentSplitPointer * splitLength);
+                            Double correction = distance / splitLength;
                             Double currentSplitTime = timestamp - ((timestamp - prevTimestamp) * correction);
 
                             // save in case of new lap record
@@ -162,6 +168,11 @@ namespace WheelDisplayHostApp
         }
 
         public TimeSpan GetBestLapDelta(Single trackPosition)
+        {
+            return GetBestLapDelta((Double)trackPosition);
+        }
+
+        public TimeSpan GetBestLapDelta(Double trackPosition)
         {
             if (validbestlap)
             {
