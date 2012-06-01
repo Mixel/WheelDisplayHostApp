@@ -26,7 +26,8 @@
  *      Class constructor
  *      Parameters:
  *          length: Track length in some format, see splitdistance constant
- * 
+ *          
+ *  Update(Double timestamp, Double[] trackPosition)
  *  Update(Double timestamp, Single[] trackPosition)
  *      Updates data using timestamp and car positions. Also handles best lap if car 
  *      id is set, see SaveBestLap().
@@ -40,6 +41,7 @@
  *      Parameters:
  *          caridx: car id for car to be followed
  *  
+ *  GetBestLapDelta(Double trackPosition)
  *  GetBestLapDelta(Single trackPosition)
  *      Gets delta to previously saved best lap
  *      Parameters:
@@ -60,13 +62,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
+using System.IO.Compression;
 
 namespace WheelDisplayHostApp
 {
     class TimeDelta
     {
         private static Int32 maxcars = 64;
-        private static Int32 splitdistance = 10;
+        private static Int32 splitdistance = 5;
 
         private Double[][] splits = new Double[maxcars][];
         private Int32[] splitPointer = new Int32[maxcars];
@@ -77,11 +81,12 @@ namespace WheelDisplayHostApp
         private Double[] currentlap;
         private Boolean validbestlap;
         private Double lapstarttime;
+        private Int32 arraySize;
 
         public TimeDelta(Single length)
         {
             // split times every 10 meters
-            Int32 arraySize = (Int32)Math.Round(length / splitdistance);
+            arraySize = (Int32)Math.Round(length / splitdistance);
 
             // set split length
             splitLength = (Single)(1.0 / (Double)arraySize);
@@ -130,12 +135,36 @@ namespace WheelDisplayHostApp
                             Double distance = trackPosition[i] - (currentSplitPointer * splitLength);
                             Double correction = distance / splitLength;
                             Double currentSplitTime = timestamp - ((timestamp - prevTimestamp) * correction);
+                            Boolean newlap = false;
 
+                            if (currentSplitPointer < (100 / splitdistance) && splitPointer[i] > arraySize - (100 / splitdistance))
+                                newlap = true;
+
+                            // check if we need interpolation over zero values (splithop > 1)
+                            Int32 splithop = currentSplitPointer - splitPointer[i];
+                            Double splitcumulator = (currentSplitTime - prevTimestamp) / splithop;
+                            Int32 k = 1;
+
+                            // check if we crossed the s/f-line (2*10 split threshold, otherwise we miss it)
+                            if (splithop < 0 && newlap)
+                            {
+                                splithop = arraySize - splitPointer[i] + currentSplitPointer;
+
+                                // in case it new best lap precalculate rest of the lap
+                                if (followed >= 0 && i == followed)
+                                {
+                                    for (Int32 j = splitPointer[i] + 1; j < arraySize; j++)
+                                    {
+                                        splits[i][j % arraySize] = splits[i][splitPointer[i]] + k++ * splitcumulator;
+                                    }
+                                }
+                            }
+                            
                             // save in case of new lap record
-                            if (followed >= 0)
+                            if (followed >= 0 && i == followed)
                             {
                                 // check new lap
-                                if (currentSplitPointer == 0)
+                                if (newlap)
                                 {
                                     if ((currentSplitTime - splits[i][0]) < bestlap[bestlap.Length - 1] || bestlap[bestlap.Length - 1] == 0)
                                     {
@@ -155,7 +184,39 @@ namespace WheelDisplayHostApp
                                 lapstarttime = currentlap[currentSplitPointer];
                                 currentlap[currentSplitPointer] = currentSplitTime;
                             }
-                            
+
+                            // fill hopped sectors if necessary
+                            if (splithop > 1)
+                            {
+                                k = 1;
+                                for (Int32 j = splitPointer[i] + 1; j % arraySize != currentSplitPointer; j++)
+                                {
+                                    splits[i][j % arraySize] = splits[i][splitPointer[i]] + k++ * splitcumulator;
+                                }
+                            }
+
+                            if (i == followed && newlap)
+                            {
+                                Console.WriteLine("Sanity check");
+                                // debug sanity check
+                                Double time = 0;
+                                for (Int32 l = 1; l < arraySize; l++)
+                                {
+                                    time = splits[i][l] - splits[i][l-1];
+                                    if (time < 0 && splits[i][l] > 0)
+                                        Console.WriteLine(l.ToString() + ": " + time.ToString());
+                                }
+
+                                time = 0;
+                                for (Int32 l = 1; l < arraySize; l++)
+                                {
+                                    time = bestlap[l] - bestlap[l-1];
+                                    if (time < 0 && bestlap[l] > 0)
+                                        Console.WriteLine(l.ToString() + ": " + time.ToString());
+                                }
+
+                            }
+
                             // save
                             splits[i][currentSplitPointer] = currentSplitTime;
                             splitPointer[i] = currentSplitPointer;
@@ -216,6 +277,53 @@ namespace WheelDisplayHostApp
             else
             {
                 return new TimeSpan();
+            }
+        }
+
+        public void StoreLap(String filename)
+        {
+            
+            FileStream file = File.Create(filename);
+            DeflateStream Compress = new DeflateStream(file, CompressionMode.Compress);
+
+            Byte[] buf;
+            for (Int32 i = 0; i < bestlap.Length; i++)
+            {
+                buf = BitConverter.GetBytes(bestlap[i]);
+                Compress.Write(buf, 0, buf.Length);
+            }
+
+            Compress.Close();
+            file.Close();
+
+        }
+
+        public void LoadLap(String filename)
+        {
+            if (File.Exists(filename))
+            {
+                FileStream file = File.OpenRead(filename);
+                DeflateStream Compress = new DeflateStream(file, CompressionMode.Decompress);
+                Byte[] buf = new Byte[sizeof(Double)];
+                Int32 arrPtr = 0;
+                Int32 retval = 0;
+
+                do
+                {
+                    retval = Compress.Read(buf, 0, sizeof(Double));
+                    if (arrPtr < bestlap.Length && retval > 0)
+                        bestlap[arrPtr++] = BitConverter.ToDouble(buf, 0);
+                } while (retval > 0);
+
+                if (arrPtr == bestlap.Length)
+                    validbestlap = true;
+                else
+                {
+                    validbestlap = false;
+                    bestlap = new Double[arraySize];
+                }
+                Compress.Close();
+                file.Close();
             }
         }
     }

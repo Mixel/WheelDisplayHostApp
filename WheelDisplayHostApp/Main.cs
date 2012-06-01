@@ -205,7 +205,7 @@ namespace WheelDisplayHostApp
 
                 u.updateType(usb.types.Delta, unchecked((short)deltabytes));
 
-                /*
+                
                 ushort laptimebytes = 0;
                 if (rf.LapTime.TotalMilliseconds < 0)
                     laptimebytes |= 1 << 15;
@@ -213,9 +213,8 @@ namespace WheelDisplayHostApp
                 laptimebytes |= (ushort)((UInt16)(Math.Abs(rf.LapTime.Minutes)) << 9);
                 laptimebytes |= (ushort)((UInt16)(Math.Abs(rf.LapTime.Seconds)) << 3);
                 laptimebytes |= (ushort)((UInt16)(Math.Abs(rf.LapTime.Milliseconds / 100)));
-                 * 
+
                 u.updateType(usb.types.LapTime, unchecked((short)laptimebytes));
-                */
 
                 if (rf.PitLimiter)
                 {

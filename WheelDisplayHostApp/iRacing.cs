@@ -68,6 +68,9 @@ namespace WheelDisplayHostApp
         private Single[] fuelcons;
         private Int32 fuelconsPtr;
         private Single fuelconsumption;
+        private String carname;
+        private String trackname;
+        private Boolean ontrack;
 
         // public interface
         public Boolean isInitialized { get { return init; } set { } }
@@ -80,7 +83,15 @@ namespace WheelDisplayHostApp
         public Int32 Lap { get { return lap; } set { } }
         public Int32 LapsRemaining { get { return lapsrem; } set { } }
         public Int32 Position { get { return position; } set { } }
-        public TimeSpan LapTime { get { return new TimeSpan(0, 0, 0, (Int32)Math.Floor(lastTickTime - lapStartTime), (Int32)(((lastTickTime - lapStartTime) % 1) * 1000)); } set { } }
+        public TimeSpan LapTime { 
+            get {
+                if (ontrack)
+                    return new TimeSpan(0, 0, 0, (Int32)Math.Floor(lastTickTime - lapStartTime), (Int32)(((lastTickTime - lapStartTime) % 1) * 1000));
+                else
+                    return new TimeSpan();
+            }
+            set { }
+        }
         public TimeSpan BestLap { get { if (timedelta != null) return timedelta.BestLap; else return new TimeSpan(); } set { } }
         public TimeSpan Delta { get { return delta; } set { } }
         public TimeSpan PreviousLap { get { return prevlap; } set { } }
@@ -102,6 +113,11 @@ namespace WheelDisplayHostApp
             System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.CreateSpecificCulture("en-US");
         }
 
+        ~iRacing()
+        {
+            SaveBestLap();
+        }
+
         public void initialize()
         {
             sdk = new iRacingSDK();
@@ -116,6 +132,23 @@ namespace WheelDisplayHostApp
                 Int32 start = yaml.IndexOf("DriverCarIdx: ") + "DriverCarIdx: ".Length;
                 Int32 end = yaml.IndexOf("\n", start);
                 carIdx = Int32.Parse(yaml.Substring(start, end - start));
+
+                // carname
+                start = yaml.IndexOf("CarIdx: " + carIdx.ToString(), start);
+                start = yaml.IndexOf("CarPath: ", start) + "CarPath: ".Length;
+                end = yaml.IndexOf("\n", start);
+                if (start < 0)
+                    carname = "unknown";
+                else
+                    carname = yaml.Substring(start, end - start);
+
+                // track name
+                start = yaml.IndexOf("TrackName: ") + "TrackName: ".Length;
+                end = yaml.IndexOf("\n", start);
+                if (start < 0)
+                    trackname = "unknown";
+                else
+                    trackname = yaml.Substring(start, end - start);
 
                 // track length
                 start = yaml.IndexOf("TrackLength: ") + "TrackLength: ".Length;
@@ -170,6 +203,7 @@ namespace WheelDisplayHostApp
                 // init timedelta
                 timedelta = new TimeDelta(trackLength);
                 timedelta.SaveBestLap(carIdx);
+                LoadBestLap();
 
                 init = true;
             }
@@ -190,6 +224,7 @@ namespace WheelDisplayHostApp
                 speed = (Int32)((Single)sdk.GetData("Speed") * 3.6);
                 fuel = (Int32)((Single)sdk.GetData("FuelLevel"));
                 shiftindicator = (Single)sdk.GetData("ShiftIndicatorPct");
+                
 
                 Int32 enwarn = (Int32)sdk.GetData("EngineWarnings");
                 if (((Int32)sdk.GetData("EngineWarnings") & 0x10) > 0)
@@ -201,9 +236,14 @@ namespace WheelDisplayHostApp
                 lapsrem = (Int32)sdk.GetData("SessionLapsRemain");
 
                 Double sessionTime = new Double();
-                Boolean ontrk = (Boolean)sdk.GetData("IsOnTrack");
 
-                if ((Boolean)sdk.GetData("IsOnTrack"))
+                Boolean curontrack = (Boolean)sdk.GetData("IsOnTrack");
+                if (curontrack == false && ontrack == true)
+                    SaveBestLap();
+
+                ontrack = curontrack;
+
+                if (ontrack)
                     sessionTime = (Double)sdk.GetData("SessionTime");
                 else
                     sessionTime = (Double)sdk.GetData("ReplaySessionTime");
@@ -320,6 +360,20 @@ namespace WheelDisplayHostApp
             {
                 init = false;
             }
+        }
+
+        private void LoadBestLap()
+        {
+            String workdir = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\Wheel Display\\iRacing\\" + carname + "\\";
+            System.IO.Directory.CreateDirectory(workdir);
+            timedelta.LoadLap(workdir + trackname + ".lap");
+        }
+
+        private void SaveBestLap()
+        {
+            String workdir = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\Wheel Display\\iRacing\\" + carname + "\\";
+            System.IO.Directory.CreateDirectory(workdir);
+            timedelta.StoreLap(workdir + trackname + ".lap");
         }
     }
 }

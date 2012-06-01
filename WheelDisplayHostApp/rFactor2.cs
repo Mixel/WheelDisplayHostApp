@@ -22,6 +22,7 @@ namespace WheelDisplayHostApp
         private Int32 carid;
         private Int32 gear;
         private Double rpm;
+        private Double maxrpm;
         private Double speed;
         private Double fuel;
         private Double timestamp;
@@ -31,10 +32,13 @@ namespace WheelDisplayHostApp
         private Int32 position;
         private TimeSpan delta;
         private Double prevlap;
-        private Single shiftindicator;
         private Int32 pitlimiter;
         private Double[] driverTrkPos;
         private Int32 carinfront;
+        private String carname;
+        private String trackname;
+        private Int32 state;
+        private Int32 prevstate;
 
         private Double lastTickTrackPos = 0;
         private Double lastTickTime;
@@ -58,17 +62,40 @@ namespace WheelDisplayHostApp
         public Int32 Lap { get { return lap; } set { } }
         public Int32 LapsRemaining { get { if (totallaps > 0) return totallaps - lap; else return 0; } set { } }
         public Int32 Position { get { return position; } set { } }
-        public TimeSpan LapTime { get { return new TimeSpan(0, 0, 0, (Int32)Math.Floor(lastTickTime - lapStartTime), (Int32)(((lastTickTime - lapStartTime) % 1) * 1000)); } set { } }
+        public TimeSpan LapTime { 
+            get { 
+                if (state == 2) 
+                    return new TimeSpan(0, 0, 0, (Int32)Math.Floor(lastTickTime - lapStartTime), (Int32)(((lastTickTime - lapStartTime) % 1) * 1000)); 
+                else 
+                    return new TimeSpan(); 
+            } 
+            set { } 
+        }
         public TimeSpan BestLap { get { if (timedelta != null) return timedelta.BestLap; else return new TimeSpan(); } set { } }
         public TimeSpan Delta { get { return delta; } set { } }
         public TimeSpan PreviousLap { get { return new TimeSpan(0, 0, 0, 0, (Int32)(prevlap*1000)); } set { } }
-        public Single ShiftIndicator { get { return shiftindicator; } set { } }
         public Boolean PitLimiter { get { if(pitlimiter != 0) return true; else return false; } set { } }
+
+        public Double ShiftIndicator { 
+            get {
+                Double rpmpct = (rpm / maxrpm);
+                if (rpmpct > 0.75)
+                    return Math.Min((rpmpct - 0.75) * 4.1, 1.0);
+                else
+                    return 0.0;
+            } 
+            set { } 
+        }
 
         public rFactor2()
         {
             initialized = false;
             reset();
+        }
+
+        ~rFactor2()
+        {
+            SaveBestLap();
         }
 
         public void initialize()
@@ -115,6 +142,9 @@ namespace WheelDisplayHostApp
             {
                 Int64 pos = 0;
 
+                state = shmem.ReadInt32(pos);
+                pos += sizeof(Int32);
+
                 carid = shmem.ReadInt32(pos);
                 pos += sizeof(Int32);
 
@@ -157,18 +187,42 @@ namespace WheelDisplayHostApp
                 trackLength = shmem.ReadDouble(pos);
                 pos += sizeof(Double);
 
-                for (Int32 i = 0; i < maxcars; i++)
-                {
-                    driverTrkPos[i] = shmem.ReadDouble(pos);
-                    pos += sizeof(Double);
-                }
+                maxrpm = shmem.ReadDouble(pos);
+                pos += sizeof(Double);
+
+                shmem.ReadArray<Double>(pos, driverTrkPos, 0, maxcars);
+                pos += maxcars * sizeof(Double);
+
+                Byte[] buf = new Byte[64];
+
+                shmem.ReadArray<Byte>(pos, buf, 0, 64);
+                pos += 64 * sizeof(Byte);
+                buf = Encoding.Convert(Encoding.GetEncoding("iso-8859-1"), Encoding.UTF8, buf);
+                carname = Encoding.UTF8.GetString(buf, 0, 64);
+                carname = carname.Substring(0, carname.IndexOf('\0'));
+
+                shmem.ReadArray<Byte>(pos, buf, 0, 64);
+                pos += 64 * sizeof(Byte);
+                buf = Encoding.Convert(Encoding.GetEncoding("iso-8859-1"), Encoding.UTF8, buf);
+                trackname = Encoding.UTF8.GetString(buf, 0, 64);
+                trackname = trackname.Substring(0, trackname.IndexOf('\0'));
 
                 // process
-
                 if (needReset && trackLength > 0)
                 {
                     reset();
+                    LoadBestLap();
                     needReset = false;
+                }
+
+                if (prevstate != state)
+                {
+                    if (state == 2) // entering driving mode
+                        LoadBestLap();
+                    else if (prevstate == 2) // exiting driving mode
+                        SaveBestLap();
+
+                    prevstate = state;
                 }
 
                 timedelta.Update(timestamp, driverTrkPos);
@@ -182,9 +236,6 @@ namespace WheelDisplayHostApp
                     // save lap time
                     if (lapTimeValid)
                     {
-                        Double laptime = (timestamp - (1 - tickCorrection) * time) - lapStartTime;
-                        prevlap = laptime;
-
                         fuelcons[fuelconsPtr % fuelcons.Length] = fuel;
 
                         // update fuel consumption after one full lap
@@ -235,6 +286,19 @@ namespace WheelDisplayHostApp
                 else
                     delta = timedelta.GetBestLapDelta(driverTrkPos[carid] % 1);
             }
+        }
+
+        private void LoadBestLap() {
+            String workdir = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\Wheel Display\\rFactor2\\" + carname + "\\";
+            System.IO.Directory.CreateDirectory(workdir);
+            timedelta.LoadLap(workdir + trackname + ".lap");
+        }
+
+        private void SaveBestLap()
+        {
+            String workdir = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\Wheel Display\\rFactor2\\" + carname + "\\";
+            System.IO.Directory.CreateDirectory(workdir);
+            timedelta.StoreLap(workdir + trackname + ".lap");
         }
     }
 }
