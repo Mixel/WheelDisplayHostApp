@@ -62,20 +62,36 @@ namespace WheelDisplayHostApp
                 RPMValue.Text = ir.RPM.ToString();
                 SpeedValue.Text = ir.Speed.ToString() + " km/h";
                 FuelValue.Text = ir.Fuel.ToString() + " ltr";
-                FuelNeededValue.Text = ir.FuelNeeded.ToString() + " ltr";
-                FuelConsumptionValue.Text = Math.Round(ir.fuelConsumption, 1).ToString() + " ltr/lap";
+                FuelConsumptionValue.Text = Math.Round(ir.fuelConsumption, 3).ToString() + " ltr/lap";
                 LapValue.Text = ir.Lap.ToString();
-                LapsRemainingValue.Text = ir.LapsRemaining.ToString();
                 PositionValue.Text = ir.Position.ToString();
                 LapTimeValue.Text = ir.LapTime.Minutes.ToString() + ":" + ir.LapTime.Seconds.ToString("D2") + "." + ir.LapTime.Milliseconds.ToString("D3");
                 BestLapValue.Text = ir.BestLap.Minutes.ToString() + ":" + ir.BestLap.Seconds.ToString("D2") + "." + ir.BestLap.Milliseconds.ToString("D3");
                 PreviousLapValue.Text = ir.PreviousLap.Minutes.ToString() + ":" + ir.PreviousLap.Seconds.ToString("D2") + "." + ir.PreviousLap.Milliseconds.ToString("D3");
                 RPMLedsValue.Value = (Int32)Math.Floor(ir.ShiftIndicator * 100);
 
-                if (ir.Delta.TotalMilliseconds < 0)
-                    DeltaValue.Text = "-" + Math.Abs(ir.Delta.Minutes).ToString() + ":" + Math.Abs(ir.Delta.Seconds).ToString("D2") + "." + Math.Abs(ir.Delta.Milliseconds).ToString("D3");
+                if (ir.LapsRemaining >= 32767)
+                {
+                    LapsRemainingValue.Text = "N/A";
+                    FuelNeededValue.Text = "N/A";
+                }
                 else
-                    DeltaValue.Text = ir.Delta.Minutes.ToString() + ":" + ir.Delta.Seconds.ToString("D2") + "." + ir.Delta.Milliseconds.ToString("D3");
+                {
+                    LapsRemainingValue.Text = ir.LapsRemaining.ToString();
+                    FuelNeededValue.Text = ir.FuelNeeded.ToString() + " ltr";
+                }
+
+                if (ir.isDriving)
+                {
+                    if (ir.Delta.TotalMilliseconds < 0)
+                        DeltaValue.Text = "-" + Math.Abs(ir.Delta.Minutes).ToString() + ":" + Math.Abs(ir.Delta.Seconds).ToString("D2") + "." + Math.Abs(ir.Delta.Milliseconds).ToString("D3");
+                    else
+                        DeltaValue.Text = ir.Delta.Minutes.ToString() + ":" + ir.Delta.Seconds.ToString("D2") + "." + ir.Delta.Milliseconds.ToString("D3");
+                }
+                else
+                {
+                    DeltaValue.Text = "N/A";
+                }
             }
             else if (rf != null && rf.isInitialized)
             {
@@ -92,20 +108,34 @@ namespace WheelDisplayHostApp
                 RPMValue.Text = rf.RPM.ToString();
                 SpeedValue.Text = rf.Speed.ToString() + " km/h";
                 FuelValue.Text = rf.Fuel.ToString() + " ltr";
-                FuelNeededValue.Text = rf.FuelNeeded.ToString() + " ltr";
-                FuelConsumptionValue.Text = Math.Round(rf.fuelConsumption, 1).ToString() + " ltr/lap";
+                FuelConsumptionValue.Text = Math.Round(rf.fuelConsumption, 3).ToString() + " ltr/lap";
                 LapValue.Text = rf.Lap.ToString();
-                LapsRemainingValue.Text = rf.LapsRemaining.ToString();
                 PositionValue.Text = rf.Position.ToString();
                 LapTimeValue.Text = rf.LapTime.Minutes.ToString() + ":" + rf.LapTime.Seconds.ToString("D2") + "." + rf.LapTime.Milliseconds.ToString("D3");
                 BestLapValue.Text = rf.BestLap.Minutes.ToString() + ":" + rf.BestLap.Seconds.ToString("D2") + "." + rf.BestLap.Milliseconds.ToString("D3");
                 PreviousLapValue.Text = rf.PreviousLap.Minutes.ToString() + ":" + rf.PreviousLap.Seconds.ToString("D2") + "." + rf.PreviousLap.Milliseconds.ToString("D3");
                 RPMLedsValue.Value = (Int32)Math.Floor(rf.ShiftIndicator * 100);
 
-                if (rf.Delta.TotalMilliseconds < 0)
-                    DeltaValue.Text = "-" + Math.Abs(rf.Delta.Minutes).ToString() + ":" + Math.Abs(rf.Delta.Seconds).ToString("D2") + "." + Math.Abs(rf.Delta.Milliseconds).ToString("D3");
+                if (rf.LapsRemaining >= Int32.MaxValue)
+                {
+                    LapsRemainingValue.Text = "N/A";
+                    FuelNeededValue.Text = "N/A";
+                }
                 else
-                    DeltaValue.Text = rf.Delta.Minutes.ToString() + ":" + rf.Delta.Seconds.ToString("D2") + "." + rf.Delta.Milliseconds.ToString("D3");
+                {
+                    FuelNeededValue.Text = rf.FuelNeeded.ToString() + " ltr";
+                    LapsRemainingValue.Text = rf.LapsRemaining.ToString();
+                }
+
+                if (rf.isDriving)
+                {
+                    if (rf.Delta.TotalMilliseconds < 0)
+                        DeltaValue.Text = "-" + Math.Abs(rf.Delta.Minutes).ToString() + ":" + Math.Abs(rf.Delta.Seconds).ToString("D2") + "." + Math.Abs(rf.Delta.Milliseconds).ToString("D3");
+                    else
+                        DeltaValue.Text = rf.Delta.Minutes.ToString() + ":" + rf.Delta.Seconds.ToString("D2") + "." + rf.Delta.Milliseconds.ToString("D3");
+                }
+                else
+                    DeltaValue.Text = "N/A";
             }
             else
             {
@@ -155,8 +185,6 @@ namespace WheelDisplayHostApp
                 laptimebytes |= (ushort)((UInt16)(Math.Abs(ir.LapTime.Milliseconds / 100)));
 
                 u.updateType(usb.types.LapTime, unchecked((short)laptimebytes));
-
-
 
                 if (ir.PitLimiter)
                 {

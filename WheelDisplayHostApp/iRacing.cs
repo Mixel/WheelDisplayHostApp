@@ -97,6 +97,7 @@ namespace WheelDisplayHostApp
         public TimeSpan PreviousLap { get { return prevlap; } set { } }
         public Single ShiftIndicator { get { return shiftindicator; } set { } }
         public Boolean PitLimiter { get { return pitlimiter; } set { } }
+        public Boolean isDriving { get { return ontrack; } set { } }
 
         // public enums
         public enum SessionTypes 
@@ -115,7 +116,8 @@ namespace WheelDisplayHostApp
 
         ~iRacing()
         {
-            SaveBestLap();
+            if(timedelta != null && timedelta.BestLap.TotalSeconds > 0)
+                SaveBestLap();
         }
 
         public void initialize()

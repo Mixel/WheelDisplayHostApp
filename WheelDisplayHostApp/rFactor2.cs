@@ -60,21 +60,25 @@ namespace WheelDisplayHostApp
         public Int32 FuelNeeded { get { return fuelneed; } set { } }
         public Double fuelConsumption { get { return fuelconsumption; } set { } }
         public Int32 Lap { get { return lap; } set { } }
-        public Int32 LapsRemaining { get { if (totallaps > 0) return totallaps - lap; else return 0; } set { } }
+        public Int32 LapsRemaining { get { if (totallaps > 0 && totallaps < Int32.MaxValue) return totallaps - lap; else return Int32.MaxValue; } set { } }
         public Int32 Position { get { return position; } set { } }
-        public TimeSpan LapTime { 
-            get { 
-                if (state == 2) 
-                    return new TimeSpan(0, 0, 0, (Int32)Math.Floor(lastTickTime - lapStartTime), (Int32)(((lastTickTime - lapStartTime) % 1) * 1000)); 
-                else 
-                    return new TimeSpan(); 
-            } 
-            set { } 
-        }
         public TimeSpan BestLap { get { if (timedelta != null) return timedelta.BestLap; else return new TimeSpan(); } set { } }
         public TimeSpan Delta { get { return delta; } set { } }
         public TimeSpan PreviousLap { get { return new TimeSpan(0, 0, 0, 0, (Int32)(prevlap*1000)); } set { } }
         public Boolean PitLimiter { get { if(pitlimiter != 0) return true; else return false; } set { } }
+        public Boolean isDriving { get { if (state == 2) return true; else return false; } set { } }
+
+        public TimeSpan LapTime
+        {
+            get
+            {
+                if (state == 2)
+                    return new TimeSpan(0, 0, 0, (Int32)Math.Floor(lastTickTime - lapStartTime), (Int32)(((lastTickTime - lapStartTime) % 1) * 1000));
+                else
+                    return new TimeSpan();
+            }
+            set { }
+        }
 
         public Double ShiftIndicator { 
             get {
@@ -95,7 +99,8 @@ namespace WheelDisplayHostApp
 
         ~rFactor2()
         {
-            SaveBestLap();
+            if (timedelta != null && timedelta.BestLap.TotalSeconds > 0)
+                SaveBestLap();
         }
 
         public void initialize()
